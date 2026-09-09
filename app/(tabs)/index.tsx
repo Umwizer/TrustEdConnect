@@ -11,6 +11,20 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+const COLORS = {
+  navyDeep: '#0A1442',     
+  navyPanel: '#122156',    
+  navyHeader: '#33456E',   
+  navyCard: '#1A2A5E',     
+  green: '#22C55E',        
+  greenLight: '#4ADE80',   
+  gold: '#F5B942',         
+  white: '#FFFFFF',
+  offWhite: '#E7ECFB',     
+  muted: '#A9B4D6',       
+};
+
+const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const handleLogin = () => {
@@ -19,7 +33,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <ScrollView
         style={styles.container}
         showsVerticalScrollIndicator={false}
@@ -28,42 +42,31 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <View style={styles.logoIcon}>
-              <Ionicons name="school" size={28} color="#fff" />
+              <Ionicons name="school" size={28} color={COLORS.navyDeep} />
             </View>
-            <Text style={styles.logoText}>TrustED<Text style={styles.logoHighlight}>Connect</Text></Text>
+            <Text style={styles.logoText}>
+              TrustED<Text style={styles.logoHighlight}>Connect</Text>
+            </Text>
           </View>
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.headerBtn}>
-              <Ionicons name="notifications-outline" size={22} color="#fff" />
+              <Ionicons name="notifications-outline" size={22} color={COLORS.white} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.headerBtn} onPress={handleLogin}>
-              <Ionicons name="person-outline" size={24} color="#fff" />
+            <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
+              <Text style={styles.loginBtnText}>Login</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.heroSection}>
-          <View style={styles.heroBadge}>
-            <Ionicons name="sparkles" size={14} color="#3B82F6" />
-            <Text style={styles.heroBadgeText}>Smart Digital Solutions</Text>
-          </View>
-          <Text style={styles.heroTitle}>
-            Empowering Schools With Smart Digital Solutions
+          <Text style={styles.heroTagline}>
+            "Empowering Schools With Smart Digital Solutions"
           </Text>
           <Text style={styles.heroSubtitle}>
             A unified platform connecting administrators, teachers, and parents
             to create a thriving educational ecosystem.
           </Text>
-          <View style={styles.heroButtons}>
-            <TouchableOpacity style={styles.heroPrimaryBtn}>
-              <Text style={styles.heroPrimaryBtnText}>Get Started</Text>
-              <Ionicons name="arrow-forward" size={18} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.heroSecondaryBtn}>
-              <Ionicons name="play-circle" size={20} color="#3B82F6" />
-              <Text style={styles.heroSecondaryBtnText}>Watch Demo</Text>
-            </TouchableOpacity>
-          </View>
+
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>100K+</Text>
@@ -83,120 +86,104 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionLabel}>Our Services</Text>
-            <Text style={styles.sectionTitle}>Built for Every Role</Text>
-            <Text style={styles.sectionSubtitle}>
-              Tailored solutions for administrators, teachers, and parents — all
-              in one place.
-            </Text>
+          <Text style={styles.sectionLabelCenter}>Our Top Services</Text>
+
+          <View style={styles.servicesIconRow}>
+            {[
+              { icon: 'business-outline', color: '#3B82F6' },
+              { icon: 'people-outline', color: '#7C3AED' },
+              { icon: 'heart-outline', color: '#059669' },
+              { icon: 'person-outline', color: '#DC2626' },
+              { icon: 'shield-checkmark-outline', color: '#0EA5E9' },
+              { icon: 'ribbon-outline', color: '#F59E0B' },
+              { icon: 'chatbubbles-outline', color: '#14B8A6' },
+            ].map((item, i) => (
+              <View key={i} style={styles.serviceIconCard}>
+                <Ionicons names={item.icon} size={20} color={item.color} />
+              </View>
+            ))}
           </View>
 
-          <View style={styles.servicesGrid}>
-            <View style={[styles.serviceCard, styles.serviceCardAdmin]}>
-              <View style={styles.serviceIconWrap}>
-                <Ionicons name="business-outline" size={28} color="#3B82F6" />
-              </View>
-              <Text style={styles.serviceTitle}>For Administrators</Text>
-              <Text style={styles.serviceDesc}>
-                Primary/center high, entire-school technology strategy and
-                operations, web management, network administration, and ongoing
-                infrastructure maintenance.
-              </Text>
-              <View style={styles.serviceTags}>
-                <Text style={styles.serviceTag}>Strategy</Text>
-                <Text style={styles.serviceTag}>Operations</Text>
-                <Text style={styles.serviceTag}>Security</Text>
-              </View>
+          <View style={styles.roleBlock}>
+            <Text style={styles.roleTitle}>For Administrators</Text>
+            <Text style={styles.roleDesc}>
+              Entire-school technology strategy and operations, web
+              management, network administration, and ongoing infrastructure
+              maintenance.
+            </Text>
+            <View style={styles.serviceTags}>
+              <Text style={styles.serviceTag}>Strategy</Text>
+              <Text style={styles.serviceTag}>Operations</Text>
+              <Text style={styles.serviceTag}>Security</Text>
             </View>
+          </View>
 
-            <View style={[styles.serviceCard, styles.serviceCardTeacher]}>
-              <View style={styles.serviceIconWrap}>
-                <Ionicons name="people-outline" size={28} color="#7C3AED" />
-              </View>
-              <Text style={styles.serviceTitle}>For Teachers</Text>
-              <Text style={styles.serviceDesc}>
-                Primary/center provides teachers with tech tools to enhance
-                their teaching, track student progress, and create a more
-                positive learning environment.
-              </Text>
-              <View style={styles.serviceTags}>
-                <Text style={styles.serviceTag}>Teaching</Text>
-                <Text style={styles.serviceTag}>Progress</Text>
-                <Text style={styles.serviceTag}>Engagement</Text>
-              </View>
+          <View style={styles.roleBlock}>
+            <Text style={styles.roleTitle}>For Teachers</Text>
+            <Text style={styles.roleDesc}>
+              Tech tools to enhance teaching, track student progress, and
+              create a more positive learning environment.
+            </Text>
+            <View style={styles.serviceTags}>
+              <Text style={styles.serviceTag}>Teaching</Text>
+              <Text style={styles.serviceTag}>Progress</Text>
+              <Text style={styles.serviceTag}>Engagement</Text>
             </View>
+          </View>
 
-            <View style={[styles.serviceCard, styles.serviceCardParent]}>
-              <View style={styles.serviceIconWrap}>
-                <Ionicons name="heart-outline" size={28} color="#059669" />
-              </View>
-              <Text style={styles.serviceTitle}>For Parents</Text>
-              <Text style={styles.serviceDesc}>
-                Primary/center keeps parents informed and engaged in their
-                child's education by providing real-time updates on attendance,
-                grades, and other important information.
-              </Text>
-              <View style={styles.serviceTags}>
-                <Text style={styles.serviceTag}>Real-time</Text>
-                <Text style={styles.serviceTag}>Grades</Text>
-                <Text style={styles.serviceTag}>Engagement</Text>
-              </View>
+          <View style={styles.roleBlock}>
+            <Text style={styles.roleTitle}>For Parents</Text>
+            <Text style={styles.roleDesc}>
+              Keeps parents informed and engaged in their child's education
+              with real-time updates on attendance, grades, and more.
+            </Text>
+            <View style={styles.serviceTags}>
+              <Text style={styles.serviceTag}>Real-time</Text>
+              <Text style={styles.serviceTag}>Grades</Text>
+              <Text style={styles.serviceTag}>Engagement</Text>
             </View>
           </View>
         </View>
 
         <View style={[styles.section, styles.aboutSection]}>
-          <View style={styles.aboutGrid}>
-            <View style={styles.aboutContent}>
-              <Text style={styles.sectionLabel}>About Us</Text>
-              <Text style={styles.sectionTitle}>Who We Are</Text>
-              <Text style={styles.aboutText}>
-                We are a team of passionate individuals dedicated to making a
-                positive impact in the world. Our mission is to create
-                meaningful change and empower others to achieve their goals.
+          <Text style={styles.sectionLabelCenter}>Introduction (Who We Are)</Text>
+          <Text style={styles.aboutText}>
+            We are a team of passionate individuals dedicated to making a
+            positive impact in the world. Our mission is to create meaningful
+            change and empower others to achieve their goals.
+          </Text>
+          <View style={styles.aboutHighlights}>
+            <View style={styles.aboutHighlight}>
+              <Ionicons name="checkmark-circle" size={20} color={COLORS.green} />
+              <Text style={styles.aboutHighlightText}>
+                Over 100,000 students benefited
               </Text>
-              <View style={styles.aboutHighlights}>
-                <View style={styles.aboutHighlight}>
-                  <Ionicons name="checkmark-circle" size={20} color="#3B82F6" />
-                  <Text style={styles.aboutHighlightText}>
-                    Over 100,000 students benefited
-                  </Text>
-                </View>
-                <View style={styles.aboutHighlight}>
-                  <Ionicons name="checkmark-circle" size={20} color="#3B82F6" />
-                  <Text style={styles.aboutHighlightText}>
-                    Medical care provided to thousands
-                  </Text>
-                </View>
-                <View style={styles.aboutHighlight}>
-                  <Ionicons name="checkmark-circle" size={20} color="#3B82F6" />
-                  <Text style={styles.aboutHighlightText}>
-                    Jobs created & local economies supported
-                  </Text>
-                </View>
-              </View>
             </View>
-            <View style={styles.aboutImagePlaceholder}>
-              <Ionicons name="people" size={80} color="#93C5FD" />
-              <Text style={styles.aboutImageText}>Our Team</Text>
+            <View style={styles.aboutHighlight}>
+              <Ionicons name="checkmark-circle" size={20} color={COLORS.green} />
+              <Text style={styles.aboutHighlightText}>
+                Medical care provided to thousands
+              </Text>
+            </View>
+            <View style={styles.aboutHighlight}>
+              <Ionicons name="checkmark-circle" size={20} color={COLORS.green} />
+              <Text style={styles.aboutHighlightText}>
+                Jobs created & local economies supported
+              </Text>
             </View>
           </View>
         </View>
 
-        <View style={[styles.section, styles.visionSection]}>
-          <View style={styles.visionHeader}>
-            <Text style={styles.sectionLabel}>Looking Ahead</Text>
-            <Text style={styles.sectionTitle}>Our Vision & Future Goals</Text>
-            <Text style={styles.sectionSubtitle}>
-              Driving innovation and creating solutions that address the world's
-              most pressing challenges.
-            </Text>
-          </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionLabelCenter}>Our Vision & Future Goals</Text>
+          <Text style={styles.sectionSubtitleCenter}>
+            Driving innovation and creating solutions that address the
+            world's most pressing challenges.
+          </Text>
           <View style={styles.goalsGrid}>
             <View style={styles.goalCard}>
               <View style={styles.goalIcon}>
-                <Ionicons name="globe-outline" size={28} color="#3B82F6" />
+                <Ionicons name="globe-outline" size={26} color={COLORS.gold} />
               </View>
               <Text style={styles.goalTitle}>Expand Reach</Text>
               <Text style={styles.goalDesc}>
@@ -205,7 +192,7 @@ export default function HomeScreen() {
             </View>
             <View style={styles.goalCard}>
               <View style={styles.goalIcon}>
-                <Ionicons name="leaf-outline" size={28} color="#059669" />
+                <Ionicons name="leaf-outline" size={26} color={COLORS.gold} />
               </View>
               <Text style={styles.goalTitle}>Sustainability</Text>
               <Text style={styles.goalDesc}>
@@ -215,76 +202,56 @@ export default function HomeScreen() {
             </View>
             <View style={styles.goalCard}>
               <View style={styles.goalIcon}>
-                <Ionicons names="handshake" size={28} color="#7C3AED" />
+                <Ionicons names="handshake" size={26} color={COLORS.gold} />
               </View>
               <Text style={styles.goalTitle}>Partnerships</Text>
               <Text style={styles.goalDesc}>
-                Foster partnerships with governments and businesses for lasting
-                change.
+                Foster partnerships with governments and businesses for
+                lasting change.
               </Text>
             </View>
           </View>
         </View>
 
         <View style={[styles.section, styles.dashboardSection]}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionLabel}>Dashboard Preview</Text>
-            <Text style={styles.sectionTitle}>
-              Satisfaction Collection for School Needs
-            </Text>
-            <Text style={styles.sectionSubtitle}>
-              Everything you need, from attendance to analytics, in one
-              intuitive dashboard.
-            </Text>
-          </View>
+          <Text style={styles.sectionLabelCenter}>Dashboard Preview</Text>
+          <Text style={styles.sectionSubtitleCenter}>
+            Everything you need, from attendance to analytics, in one
+            intuitive dashboard.
+          </Text>
 
           <View style={styles.dashboardTabs}>
             <TouchableOpacity style={[styles.dashboardTab, styles.dashboardTabActive]}>
-              <Ionicons name="school-outline" size={18} color="#3B82F6" />
-              <Text style={styles.dashboardTabText}>Teachers</Text>
+              <Ionicons name="school-outline" size={18} color={COLORS.navyDeep} />
+              <Text style={styles.dashboardTabTextActive}>Teachers</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.dashboardTab}>
-              <Ionicons name="home-outline" size={18} color="#6B7280" />
+              <Ionicons name="home-outline" size={18} color={COLORS.muted} />
               <Text style={styles.dashboardTabText}>Parents</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.dashboardTab}>
-              <Ionicons name="person-outline" size={18} color="#6B7280" />
+              <Ionicons name="person-outline" size={18} color={COLORS.muted} />
               <Text style={styles.dashboardTabText}>Admin</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.dashboardGrid}>
-            <View style={styles.dashboardItem}>
-              <Ionicons name="people-outline" size={24} color="#3B82F6" />
-              <Text style={styles.dashboardItemLabel}>Students</Text>
-            </View>
-            <View style={styles.dashboardItem}>
-              <Ionicons name="person-outline" size={24} color="#7C3AED" />
-              <Text style={styles.dashboardItemLabel}>Parents</Text>
-            </View>
-            <View style={styles.dashboardItem}>
-              <Ionicons name="school-outline" size={24} color="#059669" />
-              <Text style={styles.dashboardItemLabel}>Teachers</Text>
-            </View>
-            <View style={styles.dashboardItem}>
-              <Ionicons name="settings-outline" size={24} color="#D97706" />
-              <Text style={styles.dashboardItemLabel}>Admin</Text>
-            </View>
-            <View style={styles.dashboardItem}>
-              <Ionicons name="calendar-outline" size={24} color="#DC2626" />
-              <Text style={styles.dashboardItemLabel}>Attendance</Text>
-            </View>
-            <View style={styles.dashboardItem}>
-              <Ionicons name="stats-chart-outline" size={24} color="#3B82F6" />
-              <Text style={styles.dashboardItemLabel}>Analytics</Text>
-            </View>
-            <View style={styles.dashboardItem}>
-              <Ionicons name="chatbubble-outline" size={24} color="#7C3AED" />
-              <Text style={styles.dashboardItemLabel}>Communication</Text>
-            </View>
-            <View style={styles.dashboardItem}>
-              <Ionicons name="notifications-outline" size={24} color="#059669" />
-              <Text style={styles.dashboardItemLabel}>Notifications</Text>
+          <View style={styles.dashboardCard}>
+            <View style={styles.dashboardGrid}>
+              {[
+                { icon: 'people-outline', label: 'Students', color: '#3B82F6' },
+                { icon: 'person-outline', label: 'Parents', color: '#7C3AED' },
+                { icon: 'school-outline', label: 'Teachers', color: '#059669' },
+                { icon: 'settings-outline', label: 'Admin', color: '#D97706' },
+                { icon: 'calendar-outline', label: 'Attendance', color: '#DC2626' },
+                { icon: 'stats-chart-outline', label: 'Analytics', color: '#3B82F6' },
+                { icon: 'chatbubble-outline', label: 'Communication', color: '#7C3AED' },
+                { icon: 'notifications-outline', label: 'Notifications', color: '#059669' },
+              ].map((item, i) => (
+                <View key={i} style={styles.dashboardItem}>
+                  <Ionicons names={item.icon} size={22} color={item.color} />
+                  <Text style={styles.dashboardItemLabel}>{item.label}</Text>
+                </View>
+              ))}
             </View>
           </View>
         </View>
@@ -293,8 +260,8 @@ export default function HomeScreen() {
           <View style={styles.ctaCard}>
             <Text style={styles.ctaTitle}>Ready to Transform Your School?</Text>
             <Text style={styles.ctaDesc}>
-              Join thousands of schools already using TrustEDConnect to create a
-              smarter, more connected educational environment.
+              Join thousands of schools already using TrustEDConnect to create
+              a smarter, more connected educational environment.
             </Text>
             <View style={styles.ctaButtons}>
               <TouchableOpacity style={styles.ctaPrimaryBtn}>
@@ -311,7 +278,7 @@ export default function HomeScreen() {
           <View style={styles.footerTop}>
             <View style={styles.footerBrand}>
               <View style={styles.logoIconSmall}>
-                <Ionicons name="school" size={20} color="#fff" />
+                <Ionicons name="school" size={20} color={COLORS.navyDeep} />
               </View>
               <Text style={styles.footerBrandText}>
                 TrustED<Text style={styles.logoHighlight}>Connect</Text>
@@ -328,10 +295,10 @@ export default function HomeScreen() {
             <TouchableOpacity><Text style={styles.footerLink}>Contact</Text></TouchableOpacity>
           </View>
           <View style={styles.footerSocial}>
-            <TouchableOpacity style={styles.socialBtn}><Ionicons name="logo-twitter" size={20} color="#6B7280" /></TouchableOpacity>
-            <TouchableOpacity style={styles.socialBtn}><Ionicons name="logo-linkedin" size={20} color="#6B7280" /></TouchableOpacity>
-            <TouchableOpacity style={styles.socialBtn}><Ionicons name="logo-youtube" size={20} color="#6B7280" /></TouchableOpacity>
-            <TouchableOpacity style={styles.socialBtn}><Ionicons name="logo-github" size={20} color="#6B7280" /></TouchableOpacity>
+            <TouchableOpacity style={styles.socialBtn}><Ionicons name="logo-twitter" size={18} color={COLORS.muted} /></TouchableOpacity>
+            <TouchableOpacity style={styles.socialBtn}><Ionicons name="logo-linkedin" size={18} color={COLORS.muted} /></TouchableOpacity>
+            <TouchableOpacity style={styles.socialBtn}><Ionicons name="logo-youtube" size={18} color={COLORS.muted} /></TouchableOpacity>
+            <TouchableOpacity style={styles.socialBtn}><Ionicons name="logo-github" size={18} color={COLORS.muted} /></TouchableOpacity>
           </View>
           <View style={styles.footerBottom}>
             <Text style={styles.footerCopyright}>© 2026 TrustEDConnect. All rights reserved.</Text>
@@ -345,15 +312,17 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: COLORS.navyDeep,
   },
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: COLORS.navyDeep,
   },
   contentContainer: {
     paddingBottom: 40,
   },
+
+  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -361,224 +330,164 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 16,
-    backgroundColor: '#3B82F6',
+    backgroundColor: COLORS.navyHeader,
   },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   logoIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: COLORS.gold,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
   },
   logoText: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: COLORS.white,
     letterSpacing: -0.5,
   },
   logoHighlight: {
-    color: '#DBEAFE',
+    color: COLORS.greenLight,
   },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   headerBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  loginBtn: {
+    backgroundColor: COLORS.green,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 20,
+  },
+  loginBtnText: {
+    color: COLORS.white,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  // Hero
   heroSection: {
     paddingHorizontal: 20,
-    paddingTop: 32,
-    paddingBottom: 40,
-    backgroundColor: '#EFF6FF',
-  },
-  heroBadge: {
-    flexDirection: 'row',
+    paddingTop: 28,
+    paddingBottom: 28,
+    backgroundColor: COLORS.navyHeader,
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: '#DBEAFE',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 6,
-    marginBottom: 16,
   },
-  heroBadgeText: {
-    color: '#1D4ED8',
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-  },
-  heroTitle: {
-    fontSize: 34,
-    fontWeight: '800',
-    color: '#1E293B',
-    lineHeight: 42,
-    letterSpacing: -0.5,
-    marginBottom: 14,
+  heroTagline: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.greenLight,
+    lineHeight: 28,
+    letterSpacing: -0.2,
+    marginBottom: 12,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   heroSubtitle: {
-    fontSize: 16,
-    color: '#475569',
-    lineHeight: 26,
-    marginBottom: 28,
-    maxWidth: '90%',
-  },
-  heroButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 36,
-    flexWrap: 'wrap',
-  },
-  heroPrimaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 8,
-  },
-  heroPrimaryBtnText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  heroSecondaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  heroSecondaryBtnText: {
-    color: '#1E293B',
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 14,
+    color: COLORS.offWhite,
+    lineHeight: 22,
+    marginBottom: 24,
+    textAlign: 'center',
   },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.navyDeep,
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#1E293B',
+    color: COLORS.gold,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#64748B',
+    fontSize: 11,
+    color: COLORS.muted,
     marginTop: 2,
   },
   statDivider: {
     width: 1,
-    height: 32,
-    backgroundColor: '#E2E8F0',
+    height: 30,
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
+
+  // Sections (dark)
   section: {
     paddingHorizontal: 20,
-    paddingVertical: 32,
-    backgroundColor: '#F8FAFC',
+    paddingVertical: 30,
+    backgroundColor: COLORS.navyDeep,
   },
-  sectionHeader: {
-    marginBottom: 24,
-  },
-  sectionLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#3B82F6',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-    marginBottom: 6,
-  },
-  sectionTitle: {
-    fontSize: 26,
+  sectionLabelCenter: {
+    fontSize: 20,
     fontWeight: '700',
-    color: '#1E293B',
-    lineHeight: 34,
-    letterSpacing: -0.3,
+    color: COLORS.greenLight,
+    textAlign: 'center',
+    marginBottom: 8,
   },
-  sectionSubtitle: {
-    fontSize: 15,
-    color: '#475569',
-    lineHeight: 24,
-    marginTop: 6,
+  sectionSubtitleCenter: {
+    fontSize: 14,
+    color: COLORS.muted,
+    lineHeight: 21,
+    textAlign: 'center',
+    marginBottom: 22,
   },
-  servicesGrid: {
-    gap: 16,
+
+  // Services icon row
+  servicesIconRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
+    marginBottom: 28,
   },
-  serviceCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  serviceCardAdmin: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#3B82F6',
-  },
-  serviceCardTeacher: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#7C3AED',
-  },
-  serviceCardParent: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#059669',
-  },
-  serviceIconWrap: {
-    width: 48,
-    height: 48,
+  serviceIconCard: {
+    width: 46,
+    height: 46,
     borderRadius: 12,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
   },
-  serviceTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1E293B',
+
+  // Role blocks (For Administrators / Teachers / Parents)
+  roleBlock: {
+    marginBottom: 22,
+  },
+  roleTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: COLORS.gold,
     marginBottom: 6,
   },
-  serviceDesc: {
+  roleDesc: {
     fontSize: 14,
-    color: '#475569',
-    lineHeight: 22,
-    marginBottom: 12,
+    color: COLORS.offWhite,
+    lineHeight: 21,
+    marginBottom: 10,
   },
   serviceTags: {
     flexDirection: 'row',
@@ -587,33 +496,28 @@ const styles = StyleSheet.create({
   },
   serviceTag: {
     fontSize: 11,
-    fontWeight: '500',
-    color: '#475569',
-    backgroundColor: '#F1F5F9',
+    fontWeight: '600',
+    color: COLORS.navyDeep,
+    backgroundColor: COLORS.greenLight,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
+
+  // About / Who We Are
   aboutSection: {
-    backgroundColor: '#FFFFFF',
-  },
-  aboutGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 20,
-  },
-  aboutContent: {
-    flex: 1,
-    minWidth: 280,
+    backgroundColor: COLORS.navyPanel,
   },
   aboutText: {
-    fontSize: 15,
-    color: '#475569',
-    lineHeight: 24,
-    marginBottom: 16,
+    fontSize: 14,
+    color: COLORS.offWhite,
+    lineHeight: 22,
+    textAlign: 'center',
+    marginBottom: 18,
   },
   aboutHighlights: {
-    gap: 10,
+    gap: 12,
+    alignSelf: 'center',
   },
   aboutHighlight: {
     flexDirection: 'row',
@@ -622,31 +526,10 @@ const styles = StyleSheet.create({
   },
   aboutHighlightText: {
     fontSize: 14,
-    color: '#1E293B',
+    color: COLORS.white,
   },
-  aboutImagePlaceholder: {
-    flex: 1,
-    minWidth: 140,
-    minHeight: 160,
-    backgroundColor: '#EFF6FF',
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#DBEAFE',
-    padding: 20,
-  },
-  aboutImageText: {
-    color: '#1E293B',
-    fontSize: 14,
-    marginTop: 8,
-  },
-  visionSection: {
-    backgroundColor: '#F8FAFC',
-  },
-  visionHeader: {
-    marginBottom: 24,
-  },
+
+  // Goals / Vision
   goalsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -655,68 +538,72 @@ const styles = StyleSheet.create({
   goalCard: {
     flex: 1,
     minWidth: 140,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.navyCard,
     borderRadius: 14,
     padding: 18,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(245,185,66,0.25)',
   },
   goalIcon: {
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: 'rgba(245,185,66,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
   },
   goalTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1E293B',
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.white,
     marginBottom: 4,
   },
   goalDesc: {
-    fontSize: 13,
-    color: '#475569',
+    fontSize: 12,
+    color: COLORS.muted,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 19,
   },
+
+  // Dashboard preview
   dashboardSection: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.navyDeep,
   },
   dashboardTabs: {
     flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: COLORS.navyPanel,
     borderRadius: 12,
     padding: 4,
-    marginBottom: 20,
-    alignSelf: 'flex-start',
+    marginBottom: 18,
+    alignSelf: 'center',
   },
   dashboardTab: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
   },
   dashboardTabActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: COLORS.gold,
   },
   dashboardTabText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#1E293B',
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.muted,
+  },
+  dashboardTabTextActive: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.navyDeep,
+  },
+  dashboardCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 14,
   },
   dashboardGrid: {
     flexDirection: 'row',
@@ -724,47 +611,48 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   dashboardItem: {
-    width: (Dimensions.get('window').width - 60) / 4,
+    width: (width - 68) / 4,
     backgroundColor: '#F8FAFC',
     borderRadius: 12,
-    paddingVertical: 16,
+    paddingVertical: 14,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
   dashboardItemLabel: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#475569',
     marginTop: 6,
     textAlign: 'center',
   },
+
+  // CTA
   ctaSection: {
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#F8FAFC',
+    paddingVertical: 14,
+    backgroundColor: COLORS.navyDeep,
   },
   ctaCard: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: COLORS.navyPanel,
     borderRadius: 20,
-    padding: 28,
+    padding: 26,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
+    borderColor: 'rgba(74,222,128,0.25)',
     alignItems: 'center',
   },
   ctaTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#1E293B',
+    color: COLORS.white,
     textAlign: 'center',
     marginBottom: 10,
   },
   ctaDesc: {
-    fontSize: 15,
-    color: '#475569',
+    fontSize: 14,
+    color: COLORS.muted,
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 24,
-    maxWidth: 500,
+    lineHeight: 22,
+    marginBottom: 22,
   },
   ctaButtons: {
     flexDirection: 'row',
@@ -773,37 +661,39 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ctaPrimaryBtn: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 28,
-    paddingVertical: 14,
+    backgroundColor: COLORS.green,
+    paddingHorizontal: 26,
+    paddingVertical: 13,
     borderRadius: 12,
   },
   ctaPrimaryBtnText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '700',
   },
   ctaSecondaryBtn: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 28,
-    paddingVertical: 14,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 26,
+    paddingVertical: 13,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: COLORS.gold,
   },
   ctaSecondaryBtnText: {
-    color: '#1E293B',
-    fontSize: 15,
-    fontWeight: '500',
+    color: COLORS.gold,
+    fontSize: 14,
+    fontWeight: '700',
   },
+
+  // Footer
   footer: {
     paddingHorizontal: 20,
     paddingTop: 24,
     paddingBottom: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    marginTop: 8,
-    backgroundColor: '#FFFFFF',
+    borderTopColor: 'rgba(255,255,255,0.08)',
+    marginTop: 4,
+    backgroundColor: COLORS.navyHeader,
   },
   footerTop: {
     alignItems: 'center',
@@ -816,21 +706,21 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   logoIconSmall: {
-    width: 32,
-    height: 32,
+    width: 30,
+    height: 30,
     borderRadius: 8,
-    backgroundColor: '#3B82F6',
+    backgroundColor: COLORS.gold,
     alignItems: 'center',
     justifyContent: 'center',
   },
   footerBrandText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#1E293B',
+    color: COLORS.white,
   },
   footerTagline: {
-    fontSize: 13,
-    color: '#64748B',
+    fontSize: 12,
+    color: COLORS.muted,
   },
   footerLinks: {
     flexDirection: 'row',
@@ -840,7 +730,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   footerLink: {
-    color: '#475569',
+    color: COLORS.offWhite,
     fontSize: 13,
     fontWeight: '400',
   },
@@ -851,10 +741,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   socialBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F1F5F9',
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -862,7 +752,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerCopyright: {
-    fontSize: 12,
-    color: '#94A3B8',
+    fontSize: 11,
+    color: COLORS.muted,
   },
 });
