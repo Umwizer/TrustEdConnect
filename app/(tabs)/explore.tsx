@@ -1,4 +1,3 @@
-// app/(tabs)/explore.tsx
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
@@ -8,7 +7,7 @@ export default function ExploreScreen() {
       <Text style={styles.title}>Explore</Text>
       <Text style={styles.subtitle}>Discover more features</Text>
     </View>
-  );
+  );  
 }
 
 const styles = StyleSheet.create({
