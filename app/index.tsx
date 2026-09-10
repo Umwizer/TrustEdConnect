@@ -47,7 +47,7 @@ export default function SplashScreen() {
         </Text>
       </View>
 
-        Child image
+        {/* Child image */}
         <View style={styles.imageContainer}>
           <Image
             source={require('../assets/images/primaryconnect-child.png')}
@@ -263,7 +263,6 @@ const styles = StyleSheet.create({
     minHeight: 230,
     maxHeight: 360,
     marginTop: 8,
-    backgroundClip: 'absolute',
   },
 
   childImage: {

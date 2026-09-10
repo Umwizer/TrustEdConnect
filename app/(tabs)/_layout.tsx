@@ -1,8 +1,16 @@
 // app/(tabs)/_layout.tsx - 5 Main Tabs Only
 import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { useFonts } from 'expo-font';
 export default function TabLayout() {
+  const [fontsLoaded] = useFonts({
+    // Define your custom fonts here
+  });
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
     <Tabs
       screenOptions={{

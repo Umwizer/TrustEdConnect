@@ -6,6 +6,9 @@ import {
   updateProfile,
   GoogleAuthProvider,
   signInWithCredential,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updatePassword,
 } from 'firebase/auth';
 
 import {
@@ -31,7 +34,7 @@ export const loginUser = async (
 };
 
 /**
- * Register a new teacher
+ * Register a new user
  */
 export const registerUser = async (
   fullName: string,
@@ -65,6 +68,7 @@ export const registerUser = async (
 
   return userCredential;
 };
+
 /**
  * Sign in with Google credential
  */
@@ -72,8 +76,6 @@ export const loginWithGoogleCredential = async (
   idToken: string,
   accessToken?: string
 ) => {
-  const provider = new GoogleAuthProvider();
-
   const credential = GoogleAuthProvider.credential(
     idToken,
     accessToken
@@ -86,12 +88,15 @@ export const loginWithGoogleCredential = async (
 
   const user = result.user;
 
-  // Create/update teacher profile
+  /**
+   * Create or update the user's profile
+   * in Firestore.
+   */
   await setDoc(
-    doc(db, 'teachers', user.uid),
+    doc(db, 'users', user.uid),
     {
       uid: user.uid,
-      fullName: user.displayName || 'Teacher',
+      fullName: user.displayName || 'User',
       email: user.email || '',
       role: 'teacher',
       photoURL: user.photoURL || null,
@@ -113,7 +118,7 @@ export const logoutUser = async () => {
 };
 
 /**
- * Password reset
+ * Send password reset email
  */
 export const resetPassword = async (
   email: string
@@ -121,5 +126,60 @@ export const resetPassword = async (
   return await sendPasswordResetEmail(
     auth,
     email.trim().toLowerCase()
+  );
+};
+
+/**
+ * Change the password of the currently
+ * authenticated email/password user.
+ */
+export const changeUserPassword = async (
+  currentPassword: string,
+  newPassword: string
+) => {
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error(
+      'No authenticated user found.'
+    );
+  }
+
+  /**
+   * Google-only users don't have an
+   * email/password credential.
+   */
+  if (!user.email) {
+    throw new Error(
+      'This account does not have an email/password login.'
+    );
+  }
+
+  /**
+   * Create a credential using the
+   * user's current email and password.
+   */
+  const credential =
+    EmailAuthProvider.credential(
+      user.email,
+      currentPassword
+    );
+
+  /**
+   * Firebase requires the user to have
+   * recently authenticated before changing
+   * sensitive account information.
+   */
+  await reauthenticateWithCredential(
+    user,
+    credential
+  );
+
+  /**
+   * Change the password.
+   */
+  await updatePassword(
+    user,
+    newPassword
   );
 };
