@@ -1,29 +1,20 @@
-import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Stack } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function TabLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: '#4F46E5',
-        tabBarInactiveTintColor: '#9CA3AF',
-        tabBarStyle: {
-          backgroundColor: '#0B1121',
-          borderTopColor: '#1F2937',
-        },
-        headerStyle: { backgroundColor: '#0B1121' },
-        headerTintColor: '#FFFFFF',
-      }}
-    >
-      <Tabs.Screen
-        name="index"         
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
-          ),
+    <SafeAreaView>
+      <Stack
+        screenOptions={{
+          headerShown: false,
         }}
-      />
-    </Tabs>
+      >
+        <Stack.Screen name="index" />
+        <Stack.Screen name="login" />
+        <Stack.Screen name="register" />
+        <Stack.Screen name="forgot-password" />
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+    </SafeAreaView>
   );
 }
