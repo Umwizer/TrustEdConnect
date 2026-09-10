@@ -1,103 +1,54 @@
-import React, { useEffect, useState } from 'react';
-
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
+  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
-
 import { Ionicons } from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
+import { loginUser } from '../services/auth';
 
-import { useRouter } from 'expo-router';
-
-import * as WebBrowser from 'expo-web-browser';
-
-import * as Google from 'expo-auth-session/providers/google';
-
-import { loginUser, loginWithGoogleCredential } from '../services/auth';
-
-WebBrowser.maybeCompleteAuthSession();
+type UserRole = 'admin' | 'teacher' | 'parent';
 
 export default function LoginScreen() {
-  const router = useRouter();
+  const params = useLocalSearchParams<{
+    role?: string;
+  }>();
+
+  const role: UserRole =
+    params.role === 'teacher'
+      ? 'teacher'
+      : params.role === 'parent'
+      ? 'parent'
+      : 'admin';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const [showPassword, setShowPassword] = useState(false);
-
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  /*
-   * Replace these with your Google OAuth client IDs.
-   *
-   * We'll configure these after the basic email/password
-   * authentication is working.
-   */
-  const [request, response, promptAsync] =
-    Google.useAuthRequest({
-      webClientId:
-        process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-
-      iosClientId:
-        process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-
-      androidClientId:
-        process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-    });
-
-  useEffect(() => {
-    const handleGoogleResponse = async () => {
-      if (
-        response?.type !== 'success' ||
-        !response.authentication?.idToken
-      ) {
-        return;
-      }
-
-      try {
-        setGoogleLoading(true);
-
-        await loginWithGoogleCredential(
-          response.authentication.idToken,
-          response.authentication.accessToken
-        );
-
-        router.replace('/(tabs)');
-      } catch (error: any) {
-        console.error('Google login error:', error);
-
-        Alert.alert(
-          'Google Sign-In Failed',
-          getFirebaseErrorMessage(error)
-        );
-      } finally {
-        setGoogleLoading(false);
-      }
-    };
-
-    handleGoogleResponse();
-  }, [response]);
+  const roleName = {
+    admin: 'Administrator',
+    teacher: 'Teacher',
+    parent: 'Parent',
+  }[role];
 
   const handleLogin = async () => {
+    setError('');
+
     if (!email.trim()) {
-      Alert.alert('Missing Email', 'Please enter your email.');
+      setError('Please enter your email.');
       return;
     }
 
     if (!password) {
-      Alert.alert(
-        'Missing Password',
-        'Please enter your password.'
-      );
+      setError('Please enter your password.');
       return;
     }
 
@@ -106,155 +57,195 @@ export default function LoginScreen() {
 
       await loginUser(email, password);
 
-      router.replace('/(tabs)');
-    } catch (error: any) {
-      console.error('Login error:', error);
+      /*
+       * FOR NOW
+       * We are allowing the selected role to determine
+       * where the user goes after login.
+       *
+       * Later we will check the real role stored in Firestore
+       * before allowing access.
+       */
 
-      Alert.alert(
-        'Login Failed',
-        getFirebaseErrorMessage(error)
-      );
+     if (role === 'admin') {
+  router.replace('/admin' as any);
+} else if (role === 'teacher') {
+  // Teacher dashboard will be added later
+  router.replace('/login' as any);
+} else {
+  // Parent dashboard will be added later
+  router.replace('/login' as any);
+}
+    } catch (err: any) {
+      console.log('Login error:', err);
+
+      if (
+        err?.code === 'auth/invalid-credential' ||
+        err?.code === 'auth/wrong-password' ||
+        err?.code === 'auth/user-not-found'
+      ) {
+        setError('Incorrect email or password.');
+      } else if (err?.code === 'auth/invalid-email') {
+        setError('Please enter a valid email address.');
+      } else if (err?.code === 'auth/too-many-requests') {
+        setError(
+          'Too many login attempts. Please try again later.'
+        );
+      } else {
+        setError('Unable to login. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      setGoogleLoading(true);
-
-      await promptAsync();
-    } catch (error: any) {
-      console.error('Google prompt error:', error);
-
-      Alert.alert(
-        'Google Sign-In Failed',
-        'Unable to open Google Sign-In.'
-      );
-
-      setGoogleLoading(false);
-    }
-  };
-
-  const goToRegister = () => {
-    router.push('/register');
+  const handleRegister = () => {
+    router.push({
+      pathname: '/register',
+      params: {
+        role,
+      },
+    });
   };
 
   const handleForgotPassword = () => {
-    router.push('/forgot-password');
+    router.push({
+      pathname: '/forgot-password',
+      params: {
+        role,
+      },
+    });
+  };
+
+  const handleChangeRole = () => {
+    router.replace('/');
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={
-        Platform.OS === 'ios'
-          ? 'padding'
-          : undefined
-      }
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+
+        {/* Back / Change role */}
+
+        <Pressable
+          style={styles.backButton}
+          onPress={handleChangeRole}
+        >
+          <Ionicons
+            name="arrow-back"
+            size={22}
+            color="#061B5E"
+          />
+
+          <Text style={styles.backText}>
+            Change role
+          </Text>
+        </Pressable>
+
         {/* Header */}
+
         <View style={styles.header}>
-          <View style={styles.logoContainer}>
+          <View style={styles.iconCircle}>
             <Ionicons
-              name="school"
+              name={
+                role === 'admin'
+                  ? 'person-outline'
+                  : role === 'teacher'
+                  ? 'school-outline'
+                  : 'people-outline'
+              }
               size={38}
-              color="#FFFFFF"
+              color="#1555E8"
             />
           </View>
 
           <Text style={styles.title}>
-            TrustEdConnect
+            Welcome back
           </Text>
 
           <Text style={styles.subtitle}>
-            Teacher Portal
+            Sign in as {roleName}
           </Text>
         </View>
 
-        {/* Login Card */}
-        <View style={styles.card}>
-          <Text style={styles.welcome}>
-            Welcome Back
-          </Text>
+        {/* Form */}
 
-          <Text style={styles.description}>
-            Sign in to continue to your teacher account.
-          </Text>
+        <View style={styles.form}>
 
           {/* Email */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>
-              Email
-            </Text>
 
-            <View style={styles.inputContainer}>
-              <Ionicons
-                name="mail-outline"
-                size={20}
-                color="#777"
-              />
+          <View style={styles.inputContainer}>
+            <Ionicons
+              name="mail-outline"
+              size={21}
+              color="#777777"
+            />
 
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email"
-                placeholderTextColor="#999"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
+            <TextInput
+              style={styles.input}
+              placeholder="Email address"
+              placeholderTextColor="#999999"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              editable={!loading}
+            />
           </View>
 
           {/* Password */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>
-              Password
-            </Text>
 
-            <View style={styles.inputContainer}>
+          <View style={styles.inputContainer}>
+            <Ionicons
+              name="lock-closed-outline"
+              size={21}
+              color="#777777"
+            />
+
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              placeholderTextColor="#999999"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              editable={!loading}
+            />
+
+            <Pressable
+              onPress={() =>
+                setShowPassword(!showPassword)
+              }
+            >
               <Ionicons
-                name="lock-closed-outline"
-                size={20}
-                color="#777"
-              />
-
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your password"
-                placeholderTextColor="#999"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-              />
-
-              <Pressable
-                onPress={() =>
-                  setShowPassword(!showPassword)
+                name={
+                  showPassword
+                    ? 'eye-outline'
+                    : 'eye-off-outline'
                 }
-              >
-                <Ionicons
-                  name={
-                    showPassword
-                      ? 'eye-off-outline'
-                      : 'eye-outline'
-                  }
-                  size={21}
-                  color="#777"
-                />
-              </Pressable>
-            </View>
+                size={21}
+                color="#777777"
+              />
+            </Pressable>
           </View>
 
+          {/* Error */}
+
+          {error ? (
+            <View style={styles.errorContainer}>
+              <Ionicons
+                name="alert-circle-outline"
+                size={18}
+                color="#D93025"
+              />
+
+              <Text style={styles.errorText}>
+                {error}
+              </Text>
+            </View>
+          ) : null}
+
           {/* Forgot password */}
+
           <Pressable
             style={styles.forgotButton}
             onPress={handleForgotPassword}
@@ -265,239 +256,207 @@ export default function LoginScreen() {
           </Pressable>
 
           {/* Login */}
+
           <Pressable
             style={[
               styles.loginButton,
               loading && styles.disabledButton,
             ]}
             onPress={handleLogin}
-            disabled={loading || googleLoading}
+            disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.loginButtonText}>
-                Sign In
-              </Text>
-            )}
-          </Pressable>
-
-          {/* Divider */}
-          <View style={styles.dividerContainer}>
-            <View style={styles.divider} />
-
-            <Text style={styles.dividerText}>
-              OR
-            </Text>
-
-            <View style={styles.divider} />
-          </View>
-
-          {/* Google */}
-          <Pressable
-            style={[
-              styles.googleButton,
-              (!request ||
-                googleLoading) &&
-                styles.disabledGoogleButton,
-            ]}
-            onPress={handleGoogleLogin}
-            disabled={
-              !request ||
-              googleLoading ||
-              loading
-            }
-          >
-            {googleLoading ? (
-              <ActivityIndicator color="#222" />
+              <ActivityIndicator
+                size="small"
+                color="#FFFFFF"
+              />
             ) : (
               <>
-                <Text style={styles.googleG}>
-                  G
+                <Text style={styles.loginText}>
+                  Sign in as {roleName}
                 </Text>
 
-                <Text style={styles.googleText}>
-                  Continue with Google
-                </Text>
+                <Ionicons
+                  name="arrow-forward"
+                  size={20}
+                  color="#FFFFFF"
+                />
               </>
             )}
           </Pressable>
 
+          {/* Divider */}
+
+          <View style={styles.dividerContainer}>
+            <View style={styles.line} />
+
+            <Text style={styles.orText}>
+              OR
+            </Text>
+
+            <View style={styles.line} />
+          </View>
+
+          {/* Google */}
+
+          <Pressable
+            style={styles.googleButton}
+            disabled={loading}
+          >
+            <Text style={styles.googleG}>
+              G
+            </Text>
+
+            <Text style={styles.googleText}>
+              Continue with Google
+            </Text>
+          </Pressable>
+
           {/* Register */}
+
           <View style={styles.registerContainer}>
-            <Text style={styles.registerText}>
+            <Text style={styles.registerQuestion}>
               Don't have an account?
             </Text>
 
             <Pressable
-              onPress={goToRegister}
+              onPress={handleRegister}
+              disabled={loading}
             >
-              <Text style={styles.registerLink}>
-                Create new account
+              <Text style={styles.registerText}>
+                Create account
               </Text>
             </Pressable>
           </View>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+      </View>
+    </SafeAreaView>
   );
 }
 
-/**
- * Convert Firebase errors into
- * user-friendly messages.
- */
-function getFirebaseErrorMessage(
-  error: any
-) {
-  switch (error?.code) {
-    case 'auth/invalid-email':
-      return 'Please enter a valid email address.';
-
-    case 'auth/user-not-found':
-      return 'No account exists with this email.';
-
-    case 'auth/wrong-password':
-    case 'auth/invalid-credential':
-      return 'Incorrect email or password.';
-
-    case 'auth/too-many-requests':
-      return 'Too many attempts. Please try again later.';
-
-    case 'auth/network-request-failed':
-      return 'Please check your internet connection.';
-
-    case 'auth/popup-closed-by-user':
-      return 'Google Sign-In was cancelled.';
-
-    default:
-      return (
-        error?.message ||
-        'Something went wrong. Please try again.'
-      );
-  }
-}
-
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: '#F5F7FB',
   },
 
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
+  container: {
+    flex: 1,
+    paddingHorizontal: 28,
+  },
+
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 15,
+    gap: 7,
+  },
+
+  backText: {
+    color: '#061B5E',
+    fontSize: 14,
+    fontWeight: '600',
   },
 
   header: {
     alignItems: 'center',
-    marginBottom: 28,
+    marginTop: 45,
+    marginBottom: 35,
   },
 
-  logoContainer: {
+  iconCircle: {
     width: 76,
     height: 76,
-    borderRadius: 22,
-    backgroundColor: '#1A237E',
-    justifyContent: 'center',
+    borderRadius: 38,
+    backgroundColor: '#E9F0FF',
     alignItems: 'center',
-    marginBottom: 14,
+    justifyContent: 'center',
+    marginBottom: 18,
   },
 
   title: {
-    fontSize: 28,
+    color: '#061B5E',
+    fontSize: 30,
     fontWeight: '800',
-    color: '#1A237E',
   },
 
   subtitle: {
+    color: '#777777',
     fontSize: 15,
-    color: '#777',
-    marginTop: 4,
-  },
-
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: {
-      width: 0,
-      height: 5,
-    },
-    elevation: 4,
-  },
-
-  welcome: {
-    fontSize: 23,
-    fontWeight: '700',
-    color: '#222',
-  },
-
-  description: {
-    fontSize: 14,
-    color: '#777',
     marginTop: 7,
-    marginBottom: 24,
-    lineHeight: 20,
   },
 
-  inputGroup: {
-    marginBottom: 17,
-  },
-
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+  form: {
+    width: '100%',
+    maxWidth: 500,
+    alignSelf: 'center',
   },
 
   inputContainer: {
-    height: 52,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 12,
+    height: 58,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 15,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    backgroundColor: '#FAFAFA',
+    paddingHorizontal: 17,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#E7E7E7',
   },
 
   input: {
     flex: 1,
-    marginLeft: 10,
+    height: '100%',
+    marginLeft: 11,
+    color: '#222222',
     fontSize: 15,
-    color: '#222',
+  },
+
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF0F0',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 2,
+    marginBottom: 8,
+  },
+
+  errorText: {
+    flex: 1,
+    color: '#D93025',
+    fontSize: 13,
+    marginLeft: 8,
   },
 
   forgotButton: {
     alignSelf: 'flex-end',
+    marginTop: 2,
     marginBottom: 20,
   },
 
   forgotText: {
-    color: '#1A237E',
-    fontSize: 14,
-    fontWeight: '600',
+    color: '#1555E8',
+    fontSize: 13,
+    fontWeight: '700',
   },
 
   loginButton: {
-    height: 52,
-    borderRadius: 12,
-    backgroundColor: '#1A237E',
-    justifyContent: 'center',
+    height: 58,
+    backgroundColor: '#1555E8',
+    borderRadius: 15,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
   },
 
   disabledButton: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
 
-  loginButtonText: {
+  loginText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
@@ -506,63 +465,60 @@ const styles = StyleSheet.create({
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 22,
+    marginVertical: 24,
   },
 
-  divider: {
+  line: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E5E5E5',
+    backgroundColor: '#DDDDDD',
   },
 
-  dividerText: {
-    marginHorizontal: 12,
-    color: '#999',
+  orText: {
+    color: '#999999',
     fontSize: 12,
-    fontWeight: '600',
+    marginHorizontal: 14,
   },
 
   googleButton: {
-    height: 52,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#DDD',
+    height: 58,
     backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DDDDDD',
+    borderRadius: 15,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  disabledGoogleButton: {
-    opacity: 0.5,
-  },
-
   googleG: {
     fontSize: 20,
     fontWeight: '800',
-    marginRight: 10,
+    color: '#4285F4',
+    marginRight: 12,
   },
 
   googleText: {
+    color: '#333333',
     fontSize: 15,
     fontWeight: '600',
-    color: '#222',
   },
 
   registerContainer: {
-    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
     marginTop: 25,
+    gap: 5,
+  },
+
+  registerQuestion: {
+    color: '#777777',
+    fontSize: 13,
   },
 
   registerText: {
-    color: '#777',
-    fontSize: 14,
-  },
-
-  registerLink: {
-    color: '#1A237E',
-    fontSize: 14,
+    color: '#1555E8',
+    fontSize: 13,
     fontWeight: '700',
-    marginTop: 6,
   },
 });

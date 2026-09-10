@@ -36,36 +36,35 @@ export const loginUser = async (
 export const registerUser = async (
   fullName: string,
   email: string,
-  password: string
+  password: string,
+  role: 'admin' | 'teacher' | 'parent'
 ) => {
   const cleanName = fullName.trim();
   const cleanEmail = email.trim().toLowerCase();
 
-  const userCredential = await createUserWithEmailAndPassword(
-    auth,
-    cleanEmail,
-    password
-  );
+  const userCredential =
+    await createUserWithEmailAndPassword(
+      auth,
+      cleanEmail,
+      password
+    );
 
   const user = userCredential.user;
 
-  // Set Firebase Auth display name
   await updateProfile(user, {
     displayName: cleanName,
   });
 
-  // Save teacher profile in Firestore
-  await setDoc(doc(db, 'teachers', user.uid), {
+  await setDoc(doc(db, 'users', user.uid), {
     uid: user.uid,
     fullName: cleanName,
     email: cleanEmail,
-    role: 'teacher',
+    role: role,
     createdAt: serverTimestamp(),
   });
 
   return userCredential;
 };
-
 /**
  * Sign in with Google credential
  */
