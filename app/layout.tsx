@@ -8,12 +8,11 @@ export default function RootLayout() {
       screenOptions={{
         headerShown: false,
       }}
-    >
-      <Stack.Screen name="index" />
+    > <Stack.Screen name="index" />
       <Stack.Screen name="login" />
       <Stack.Screen name="register" />
       <Stack.Screen name="forgot-password" />
-      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="admin" />
     </Stack>
     </SafeAreaView>
   );

@@ -1,500 +1,668 @@
 import React, { useState } from 'react';
-
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
-
 import { Ionicons } from '@expo/vector-icons';
-
-import { useRouter } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import { registerUser } from '../services/auth';
 
-export default function RegisterScreen() {
-  const router = useRouter();
+type UserRole = 'admin' | 'teacher' | 'parent';
 
+export default function RegisterScreen() {
+  const params = useLocalSearchParams<{ role?: string }>();
+
+  /*
+   * Get the role from the Login page.
+   *
+   * Examples:
+   * /register?role=admin
+   * /register?role=teacher
+   * /register?role=parent
+   *
+   * If no role is provided, we use admin for now.
+   */
+  const role: UserRole =
+    params.role === 'teacher'
+      ? 'teacher'
+      : params.role === 'parent'
+      ? 'parent'
+      : 'admin';
+
+  const roleName =
+    role === 'admin'
+      ? 'Administrator'
+      : role === 'teacher'
+      ? 'Teacher'
+      : 'Parent';
+
+  // Form states
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] =
-    useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
-  const [showPassword, setShowPassword] =
+  // Password visibility
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] =
     useState(false);
 
-  const [
-    showConfirmPassword,
-    setShowConfirmPassword,
-  ] = useState(false);
+  // UI states
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const [loading, setLoading] = useState(false);
-
+  /**
+   * Create account
+   */
   const handleRegister = async () => {
+    setError('');
+
+    // Full name validation
     if (!fullName.trim()) {
-      Alert.alert(
-        'Missing Name',
-        'Please enter your full name.'
-      );
+      setError('Please enter your full name.');
       return;
     }
 
+    // Email validation
     if (!email.trim()) {
-      Alert.alert(
-        'Missing Email',
-        'Please enter your email.'
-      );
+      setError('Please enter your email address.');
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(email.trim())) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
+    // Password validation
     if (!password) {
-      Alert.alert(
-        'Missing Password',
-        'Please create a password.'
-      );
+      setError('Please enter a password.');
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert(
-        'Weak Password',
-        'Password must contain at least 6 characters.'
-      );
+      setError('Password must contain at least 6 characters.');
+      return;
+    }
+
+    // Confirm password
+    if (!confirmPassword) {
+      setError('Please confirm your password.');
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert(
-        'Passwords Do Not Match',
-        'Please make sure both passwords are the same.'
-      );
+      setError('Passwords do not match.');
       return;
     }
 
     try {
-      setLoading(true);
+      setSubmitting(true);
 
+      /**
+       * Create Firebase Authentication account
+       * and save the selected role in Firestore.
+       */
       await registerUser(
         fullName,
         email,
-        password
+        password,
+        role
       );
 
-      Alert.alert(
-        'Account Created',
-        'Your teacher account has been created successfully.',
-        [
-          {
-            text: 'Continue',
-            onPress: () => {
-              router.replace('/(tabs)');
-            },
-          },
-        ]
-      );
+      /**
+       * Admin dashboard exists now.
+       *
+       * Teacher and Parent dashboards will be added later.
+       */
+      if (role === 'admin') {
+        router.replace('/admin' as any);
+      } else if (role === 'teacher') {
+        router.replace('/login' as any);
+      } else {
+        router.replace('/login' as any);
+      }
     } catch (error: any) {
-      console.error(
-        'Registration error:',
-        error
-      );
+      console.log('Registration error:', error);
 
-      Alert.alert(
-        'Registration Failed',
-        getFirebaseErrorMessage(error)
-      );
+      if (error?.code === 'auth/email-already-in-use') {
+        setError(
+          'An account with this email already exists.'
+        );
+      } else if (error?.code === 'auth/invalid-email') {
+        setError('Please enter a valid email address.');
+      } else if (error?.code === 'auth/weak-password') {
+        setError(
+          'Password is too weak. Use at least 6 characters.'
+        );
+      } else if (error?.code === 'auth/network-request-failed') {
+        setError(
+          'Network error. Please check your internet connection.'
+        );
+      } else {
+        setError(
+          error?.message ||
+            'Something went wrong while creating your account.'
+        );
+      }
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
+  /**
+   * Go back to the correct Login page.
+   */
+  const handleBackToLogin = () => {
+    router.replace({
+      pathname: '/login',
+      params: {
+        role,
+      },
+    });
+  };
+
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={
-        Platform.OS === 'ios'
-          ? 'padding'
-          : undefined
-      }
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+    <View style={styles.safeArea}>
+      <KeyboardAvoidingView
+        style={styles.keyboardContainer}
+        behavior={
+          Platform.OS === 'ios'
+            ? 'padding'
+            : undefined
+        }
       >
-        {/* Back */}
-        <Pressable
-          style={styles.backButton}
-          onPress={() => router.back()}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <Ionicons
-            name="arrow-back"
-            size={23}
-            color="#1A237E"
-          />
+          <View style={styles.container}>
 
-          <Text style={styles.backText}>
-            Back to login
-          </Text>
-        </Pressable>
-
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <Ionicons
-              name="person-add"
-              size={34}
-              color="#FFFFFF"
-            />
-          </View>
-
-          <Text style={styles.title}>
-            Create Account
-          </Text>
-
-          <Text style={styles.subtitle}>
-            Create your TrustEdConnect teacher account
-          </Text>
-        </View>
-
-        <View style={styles.card}>
-          {/* Full name */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>
-              Full Name
-            </Text>
-
-            <View style={styles.inputContainer}>
-              <Ionicons
-                name="person-outline"
-                size={20}
-                color="#777"
-              />
-
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your full name"
-                placeholderTextColor="#999"
-                value={fullName}
-                onChangeText={setFullName}
-                autoCapitalize="words"
-              />
-            </View>
-          </View>
-
-          {/* Email */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>
-              Email
-            </Text>
-
-            <View style={styles.inputContainer}>
-              <Ionicons
-                name="mail-outline"
-                size={20}
-                color="#777"
-              />
-
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email"
-                placeholderTextColor="#999"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-          </View>
-
-          {/* Password */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>
-              Password
-            </Text>
-
-            <View style={styles.inputContainer}>
-              <Ionicons
-                name="lock-closed-outline"
-                size={20}
-                color="#777"
-              />
-
-              <TextInput
-                style={styles.input}
-                placeholder="Create a password"
-                placeholderTextColor="#999"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-              />
-
-              <Pressable
-                onPress={() =>
-                  setShowPassword(!showPassword)
-                }
-              >
-                <Ionicons
-                  name={
-                    showPassword
-                      ? 'eye-off-outline'
-                      : 'eye-outline'
-                  }
-                  size={21}
-                  color="#777"
-                />
-              </Pressable>
-            </View>
-          </View>
-
-          {/* Confirm password */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>
-              Confirm Password
-            </Text>
-
-            <View style={styles.inputContainer}>
-              <Ionicons
-                name="shield-checkmark-outline"
-                size={20}
-                color="#777"
-              />
-
-              <TextInput
-                style={styles.input}
-                placeholder="Confirm your password"
-                placeholderTextColor="#999"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry={
-                  !showConfirmPassword
-                }
-                autoCapitalize="none"
-              />
-
-              <Pressable
-                onPress={() =>
-                  setShowConfirmPassword(
-                    !showConfirmPassword
-                  )
-                }
-              >
-                <Ionicons
-                  name={
-                    showConfirmPassword
-                      ? 'eye-off-outline'
-                      : 'eye-outline'
-                  }
-                  size={21}
-                  color="#777"
-                />
-              </Pressable>
-            </View>
-          </View>
-
-          {/* Create account */}
-          <Pressable
-            style={[
-              styles.registerButton,
-              loading &&
-                styles.disabledButton,
-            ]}
-            onPress={handleRegister}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.registerButtonText}>
-                Create Account
-              </Text>
-            )}
-          </Pressable>
-
-          {/* Login */}
-          <View style={styles.loginContainer}>
-            <Text style={styles.loginText}>
-              Already have an account?
-            </Text>
-
+            {/* =========================
+                BACK BUTTON
+            ========================== */}
             <Pressable
-              onPress={() =>
-                router.replace('/login')
-              }
+              style={styles.backButton}
+              onPress={handleBackToLogin}
+              disabled={submitting}
             >
-              <Text style={styles.loginLink}>
-                Sign In
+              <Ionicons
+                name="arrow-back"
+                size={23}
+                color="#061B5E"
+              />
+
+              <Text style={styles.backText}>
+                Back to Login
               </Text>
             </Pressable>
+
+            {/* =========================
+                HEADER
+            ========================== */}
+            <View style={styles.header}>
+              <View style={styles.iconContainer}>
+                <Ionicons
+                  name={
+                    role === 'admin'
+                      ? 'shield-checkmark-outline'
+                      : role === 'teacher'
+                      ? 'school-outline'
+                      : 'people-outline'
+                  }
+                  size={34}
+                  color="#FFFFFF"
+                />
+              </View>
+
+              <Text style={styles.title}>
+                Create {roleName} Account
+              </Text>
+
+              <Text style={styles.subtitle}>
+                Create your {roleName.toLowerCase()} account
+                to continue to TrustEdConnect.
+              </Text>
+            </View>
+
+            {/* =========================
+                FORM
+            ========================== */}
+            <View style={styles.form}>
+
+              {/* FULL NAME */}
+              <Text style={styles.label}>
+                Full Name
+              </Text>
+
+              <View style={styles.inputContainer}>
+                <Ionicons
+                  name="person-outline"
+                  size={20}
+                  color="#777777"
+                />
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your full name"
+                  placeholderTextColor="#999999"
+                  value={fullName}
+                  onChangeText={setFullName}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  editable={!submitting}
+                />
+              </View>
+
+              {/* EMAIL */}
+              <Text style={styles.label}>
+                Email Address
+              </Text>
+
+              <View style={styles.inputContainer}>
+                <Ionicons
+                  name="mail-outline"
+                  size={20}
+                  color="#777777"
+                />
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your email"
+                  placeholderTextColor="#999999"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!submitting}
+                />
+              </View>
+
+              {/* PASSWORD */}
+              <Text style={styles.label}>
+                Password
+              </Text>
+
+              <View style={styles.inputContainer}>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color="#777777"
+                />
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your password"
+                  placeholderTextColor="#999999"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!submitting}
+                />
+
+                <Pressable
+                  style={styles.eyeButton}
+                  onPress={() =>
+                    setShowPassword(!showPassword)
+                  }
+                  disabled={submitting}
+                >
+                  <Ionicons
+                    name={
+                      showPassword
+                        ? 'eye-outline'
+                        : 'eye-off-outline'
+                    }
+                    size={21}
+                    color="#777777"
+                  />
+                </Pressable>
+              </View>
+
+              {/* CONFIRM PASSWORD */}
+              <Text style={styles.label}>
+                Confirm Password
+              </Text>
+
+              <View style={styles.inputContainer}>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color="#777777"
+                />
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Confirm your password"
+                  placeholderTextColor="#999999"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showConfirmPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!submitting}
+                />
+
+                <Pressable
+                  style={styles.eyeButton}
+                  onPress={() =>
+                    setShowConfirmPassword(
+                      !showConfirmPassword
+                    )
+                  }
+                  disabled={submitting}
+                >
+                  <Ionicons
+                    name={
+                      showConfirmPassword
+                        ? 'eye-outline'
+                        : 'eye-off-outline'
+                    }
+                    size={21}
+                    color="#777777"
+                  />
+                </Pressable>
+              </View>
+
+              {/* ROLE INFORMATION */}
+              <View style={styles.roleBox}>
+                <Ionicons
+                  name="information-circle-outline"
+                  size={20}
+                  color="#061B5E"
+                />
+
+                <Text style={styles.roleText}>
+                  You are creating a{' '}
+                  <Text style={styles.roleBold}>
+                    {roleName}
+                  </Text>{' '}
+                  account.
+                </Text>
+              </View>
+
+              {/* ERROR */}
+              {error ? (
+                <View style={styles.errorContainer}>
+                  <Ionicons
+                    name="alert-circle-outline"
+                    size={20}
+                    color="#D32F2F"
+                  />
+
+                  <Text style={styles.errorText}>
+                    {error}
+                  </Text>
+                </View>
+              ) : null}
+
+              {/* CREATE ACCOUNT BUTTON */}
+              <Pressable
+                style={[
+                  styles.registerButton,
+                  submitting &&
+                    styles.disabledButton,
+                ]}
+                onPress={handleRegister}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <ActivityIndicator
+                    size="small"
+                    color="#FFFFFF"
+                  />
+                ) : (
+                  <>
+                    <Text style={styles.registerButtonText}>
+                      Create {roleName} Account
+                    </Text>
+
+                    <Ionicons
+                      name="arrow-forward"
+                      size={20}
+                      color="#FFFFFF"
+                    />
+                  </>
+                )}
+              </Pressable>
+
+              {/* LOGIN LINK */}
+              <View style={styles.loginContainer}>
+                <Text style={styles.loginText}>
+                  Already have an account?
+                </Text>
+
+                <Pressable
+                  onPress={handleBackToLogin}
+                  disabled={submitting}
+                >
+                  <Text style={styles.loginLink}>
+                    Login
+                  </Text>
+                </Pressable>
+              </View>
+
+            </View>
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
-function getFirebaseErrorMessage(
-  error: any
-) {
-  switch (error?.code) {
-    case 'auth/email-already-in-use':
-      return 'An account with this email already exists.';
-
-    case 'auth/invalid-email':
-      return 'Please enter a valid email address.';
-
-    case 'auth/weak-password':
-      return 'Please choose a stronger password.';
-
-    case 'auth/network-request-failed':
-      return 'Please check your internet connection.';
-
-    default:
-      return (
-        error?.message ||
-        'Something went wrong. Please try again.'
-      );
-  }
-}
+/* =====================================================
+   STYLES
+===================================================== */
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: '#F5F7FB',
   },
 
+  keyboardContainer: {
+    flex: 1,
+  },
+
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
-    paddingTop: 50,
   },
+
+  container: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 30,
+    backgroundColor: '#F5F7FB',
+  },
+
+  /* BACK BUTTON */
 
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 25,
+    marginTop: 12,
+    marginBottom: 20,
   },
 
   backText: {
-    color: '#1A237E',
-    fontSize: 14,
+    marginLeft: 8,
+    fontSize: 15,
+    color: '#061B5E',
     fontWeight: '600',
-    marginLeft: 7,
   },
+
+  /* HEADER */
 
   header: {
     alignItems: 'center',
     marginBottom: 25,
   },
 
-  logoContainer: {
+  iconContainer: {
     width: 68,
     height: 68,
-    borderRadius: 20,
-    backgroundColor: '#1A237E',
-    justifyContent: 'center',
+    borderRadius: 34,
+    backgroundColor: '#061B5E',
     alignItems: 'center',
-    marginBottom: 13,
+    justifyContent: 'center',
+    marginBottom: 15,
   },
 
   title: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#1A237E',
+    fontSize: 25,
+    fontWeight: '700',
+    color: '#061B5E',
+    textAlign: 'center',
   },
 
   subtitle: {
     fontSize: 14,
-    color: '#777',
+    color: '#777777',
     textAlign: 'center',
-    marginTop: 6,
+    marginTop: 8,
+    lineHeight: 21,
+    maxWidth: 340,
   },
 
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: {
-      width: 0,
-      height: 5,
-    },
-    elevation: 4,
-  },
+  /* FORM */
 
-  inputGroup: {
-    marginBottom: 17,
+  form: {
+    width: '100%',
   },
 
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    color: '#333333',
+    marginBottom: 7,
+    marginTop: 12,
   },
 
   inputContainer: {
     height: 52,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#D9DDE7',
     borderRadius: 12,
+    backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
-    backgroundColor: '#FAFAFA',
   },
 
   input: {
     flex: 1,
+    height: '100%',
     marginLeft: 10,
     fontSize: 15,
-    color: '#222',
+    color: '#222222',
   },
 
-  registerButton: {
-    height: 52,
-    borderRadius: 12,
-    backgroundColor: '#1A237E',
-    justifyContent: 'center',
+  eyeButton: {
+    paddingLeft: 8,
+    paddingVertical: 5,
+  },
+
+  /* ROLE BOX */
+
+  roleBox: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 5,
+    backgroundColor: '#EAF0FF',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    marginTop: 17,
+  },
+
+  roleText: {
+    flex: 1,
+    marginLeft: 8,
+    color: '#405070',
+    fontSize: 13,
+    lineHeight: 19,
+  },
+
+  roleBold: {
+    color: '#061B5E',
+    fontWeight: '700',
+  },
+
+  /* ERROR */
+
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF1F1',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 15,
+  },
+
+  errorText: {
+    flex: 1,
+    marginLeft: 8,
+    color: '#D32F2F',
+    fontSize: 13,
+    lineHeight: 19,
+  },
+
+  /* REGISTER BUTTON */
+
+  registerButton: {
+    height: 54,
+    backgroundColor: '#061B5E',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    marginTop: 20,
   },
 
   disabledButton: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
 
   registerButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+    marginRight: 8,
   },
 
+  /* LOGIN */
+
   loginContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 22,
   },
 
   loginText: {
-    color: '#777',
+    color: '#777777',
     fontSize: 14,
   },
 
   loginLink: {
-    color: '#1A237E',
+    color: '#061B5E',
     fontSize: 14,
     fontWeight: '700',
-    marginTop: 6,
+    marginLeft: 5,
   },
 });
