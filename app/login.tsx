@@ -1,4 +1,4 @@
-// app/login.tsx - Complete Teacher Login Screen
+// app/login.tsx - No SafeAreaView
 import React, { useState } from 'react';
 import {
   View,
@@ -6,13 +6,12 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  StatusBar,
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
@@ -52,16 +51,15 @@ export default function LoginScreen() {
     if (!validateForm()) return;
 
     setIsLoading(true);
-    // Simulate login - replace with actual API call later
     setTimeout(() => {
       setIsLoading(false);
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/dashboard');
     }, 2000);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="light" />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#1A237E" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -188,7 +186,7 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
