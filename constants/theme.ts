@@ -51,3 +51,38 @@ export const Fonts = Platform.select({
     mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
   },
 });
+
+/**
+ * TrustEDConnect brand palette.
+ *
+ * This is separate from `Colors` (light/dark) above on purpose:
+ * `Colors` drives system UI chrome (tab bar, default text/background)
+ * that should respect the device's light/dark setting. `Brand` is our
+ * fixed marketing/product palette (navy + gold + green) used on the
+ * landing page, dashboards, and role-based screens — it does NOT
+ * change with light/dark mode, the same way a logo doesn't.
+ *
+ * Import it as: `import { Brand } from '@/constants/theme';`
+ */
+export const Brand = {
+  navyDeep: '#0A1442',
+  navyPanel: '#122156',
+  navyHeader: '#33456E',
+  navyCard: '#1A2A5E',
+  navyRail: '#0F1B4D',
+
+  green: '#22C55E',
+  greenLight: '#4ADE80',
+  gold: '#F5B942',
+  amber: '#F59E0B',
+  danger: '#EF4444',
+
+  white: '#FFFFFF',
+  offWhite: '#E7ECFB',
+  muted: '#A9B4D6',
+
+  bg: '#F4F6FB',
+  card: '#FFFFFF',
+  text: '#1E2340',
+  border: '#E5E8F2',
+};
