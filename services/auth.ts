@@ -10,33 +10,37 @@ import {
 
 import {
   doc,
+  getDoc,
   setDoc,
   serverTimestamp,
 } from 'firebase/firestore';
 
 import { auth, db } from './firebase';
 
-/**
- * Login with email and password
- */
-export const loginUser = async (
-  email: string,
-  password: string
-) => {
-  return await signInWithEmailAndPassword(
+export const loginUser = async (email: string, password: string) => {
+  const userCredential = await signInWithEmailAndPassword(
     auth,
     email.trim().toLowerCase(),
     password
   );
+
+  const user = userCredential.user;
+  const userDocRef = doc(db, 'users', user.uid);
+  const userDoc = await getDoc(userDocRef);
+
+  if (!userDoc.exists()) {
+    throw new Error('User record not found in database.');
+  }
+
+  const role = userDoc.data().role;
+  return { user, role };
 };
 
-/**
- * Register a new teacher
- */
 export const registerUser = async (
   fullName: string,
   email: string,
-  password: string
+  password: string,
+  role: string = 'teacher'
 ) => {
   const cleanName = fullName.trim();
   const cleanEmail = email.trim().toLowerCase();
@@ -48,79 +52,55 @@ export const registerUser = async (
   );
 
   const user = userCredential.user;
-
-  // Set Firebase Auth display name
   await updateProfile(user, {
     displayName: cleanName,
   });
 
-  // Save teacher profile in Firestore
-  await setDoc(doc(db, 'teachers', user.uid), {
+  await setDoc(doc(db, 'users', user.uid), {
     uid: user.uid,
     fullName: cleanName,
     email: cleanEmail,
-    role: 'teacher',
+    role: role,
     createdAt: serverTimestamp(),
   });
 
   return userCredential;
 };
 
-/**
- * Sign in with Google credential
- */
 export const loginWithGoogleCredential = async (
   idToken: string,
   accessToken?: string
 ) => {
   const provider = new GoogleAuthProvider();
-
-  const credential = GoogleAuthProvider.credential(
-    idToken,
-    accessToken
-  );
-
-  const result = await signInWithCredential(
-    auth,
-    credential
-  );
-
+  const credential = GoogleAuthProvider.credential(idToken, accessToken);
+  const result = await signInWithCredential(auth, credential);
   const user = result.user;
 
-  // Create/update teacher profile
-  await setDoc(
-    doc(db, 'teachers', user.uid),
-    {
+  const userDocRef = doc(db, 'users', user.uid);
+  const userDoc = await getDoc(userDocRef);
+
+  let role = 'teacher';
+
+  if (userDoc.exists()) {
+    role = userDoc.data().role;
+  } else {
+    await setDoc(userDocRef, {
       uid: user.uid,
-      fullName: user.displayName || 'Teacher',
+      fullName: user.displayName || 'User',
       email: user.email || '',
       role: 'teacher',
       photoURL: user.photoURL || null,
       updatedAt: serverTimestamp(),
-    },
-    {
-      merge: true,
-    }
-  );
+    });
+  }
 
-  return result;
+  return { result, role };
 };
 
-/**
- * Logout
- */
 export const logoutUser = async () => {
   await signOut(auth);
 };
 
-/**
- * Password reset
- */
-export const resetPassword = async (
-  email: string
-) => {
-  return await sendPasswordResetEmail(
-    auth,
-    email.trim().toLowerCase()
-  );
+export const resetPassword = async (email: string) => {
+  return await sendPasswordResetEmail(auth, email.trim().toLowerCase());
 };
