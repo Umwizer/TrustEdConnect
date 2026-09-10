@@ -40,27 +40,19 @@ export const registerUser = async (
   fullName: string,
   email: string,
   password: string,
-<<<<<<< HEAD
-  role: string = 'teacher'
-=======
   role: 'admin' | 'teacher' | 'parent'
->>>>>>> f73237a0d67873cd8277df383c6906e7fe4ca6aa
 ) => {
   const cleanName = fullName.trim();
   const cleanEmail = email.trim().toLowerCase();
 
-  const userCredential =
-    await createUserWithEmailAndPassword(
-      auth,
-      cleanEmail,
-      password
-    );
+  const userCredential = await createUserWithEmailAndPassword(
+    auth,
+    cleanEmail,
+    password
+  );
 
   const user = userCredential.user;
-<<<<<<< HEAD
-=======
 
->>>>>>> f73237a0d67873cd8277df383c6906e7fe4ca6aa
   await updateProfile(user, {
     displayName: cleanName,
   });
@@ -75,13 +67,7 @@ export const registerUser = async (
 
   return userCredential;
 };
-<<<<<<< HEAD
 
-=======
-/**
- * Sign in with Google credential
- */
->>>>>>> f73237a0d67873cd8277df383c6906e7fe4ca6aa
 export const loginWithGoogleCredential = async (
   idToken: string,
   accessToken?: string
