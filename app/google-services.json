@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1079130241493",
+    "project_id": "trustedconnect-4f821",
+    "storage_bucket": "trustedconnect-4f821.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1079130241493:android:eec0b6696b72566620e55c",
+        "android_client_info": {
+          "package_name": "com.trustedconnect.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1079130241493-u6npb3mo6r3l91uoo2j2eaokuvvd9t3q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDCLuuEwfexjMwh43tfFG84dDxlldHHgFA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1079130241493-u6npb3mo6r3l91uoo2j2eaokuvvd9t3q.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
