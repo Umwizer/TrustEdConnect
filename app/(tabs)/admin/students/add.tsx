@@ -494,7 +494,7 @@ export default function AddStudentScreen() {
               color="#061B5E"
             />
 
-            <View style={styles.infoContent}>
+            {/* <View style={styles.infoContent}>
               <Text style={styles.infoTitle}>
                 Database
               </Text>
@@ -505,7 +505,7 @@ export default function AddStudentScreen() {
                 will immediately appear in the
                 Students list.
               </Text>
-            </View>
+            </View> */}
           </View>
 
           {/* Buttons */}
