@@ -6,6 +6,9 @@ import {
   updateProfile,
   GoogleAuthProvider,
   signInWithCredential,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updatePassword,
 } from 'firebase/auth';
 
 import {
@@ -72,7 +75,6 @@ export const loginWithGoogleCredential = async (
   idToken: string,
   accessToken?: string
 ) => {
-  const provider = new GoogleAuthProvider();
   const credential = GoogleAuthProvider.credential(idToken, accessToken);
   const result = await signInWithCredential(auth, credential);
   const user = result.user;
@@ -104,4 +106,23 @@ export const logoutUser = async () => {
 
 export const resetPassword = async (email: string) => {
   return await sendPasswordResetEmail(auth, email.trim().toLowerCase());
+};
+
+export const changeUserPassword = async (
+  currentPassword: string,
+  newPassword: string
+) => {
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error('No authenticated user found.');
+  }
+
+  if (!user.email) {
+    throw new Error('This account does not have an email/password login.');
+  }
+
+  const credential = EmailAuthProvider.credential(user.email, currentPassword);
+  await reauthenticateWithCredential(user, credential);
+  await updatePassword(user, newPassword);
 };
