@@ -1,4 +1,4 @@
-// app/(tabs)/class-detail/[id].tsx
+
 import React, { useState } from 'react';
 import {
   View,
