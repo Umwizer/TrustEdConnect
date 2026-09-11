@@ -1,488 +1,569 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+
+import {
+  collection,
+  onSnapshot,
+} from 'firebase/firestore';
+
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+
+import AdminHeader from '../../../components/admin/AdminHeader';
+import { db } from '../../../services/firebase';
+
+type DashboardEvent = {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  location: string;
+  type: string;
+  status: string;
+  createdAt: any;
+};
 
 export default function AdminDashboard() {
+  const [studentsCount, setStudentsCount] = useState(0);
+  const [teachersCount, setTeachersCount] = useState(0);
+  const [classesCount, setClassesCount] = useState(0);
+  const [eventsCount, setEventsCount] = useState(0);
+
+  const [upcomingEvents, setUpcomingEvents] = useState<
+    DashboardEvent[]
+  >([]);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    setLoading(true);
+    setError('');
+
+    // ============================
+    // STUDENTS
+    // ============================
+
+    const unsubscribeStudents = onSnapshot(
+      collection(db, 'students'),
+      (snapshot) => {
+        setStudentsCount(snapshot.size);
+      },
+      (error) => {
+        console.error(
+          'Students dashboard error:',
+          error
+        );
+
+        setError(
+          'Some dashboard data could not be loaded.'
+        );
+      }
+    );
+
+    // ============================
+    // TEACHERS
+    // ============================
+
+    const unsubscribeTeachers = onSnapshot(
+      collection(db, 'teachers'),
+      (snapshot) => {
+        setTeachersCount(snapshot.size);
+      },
+      (error) => {
+        console.error(
+          'Teachers dashboard error:',
+          error
+        );
+
+        setError(
+          'Some dashboard data could not be loaded.'
+        );
+      }
+    );
+
+    // ============================
+    // CLASSES
+    // ============================
+
+    const unsubscribeClasses = onSnapshot(
+      collection(db, 'classes'),
+      (snapshot) => {
+        setClassesCount(snapshot.size);
+      },
+      (error) => {
+        console.error(
+          'Classes dashboard error:',
+          error
+        );
+
+        setError(
+          'Some dashboard data could not be loaded.'
+        );
+      }
+    );
+
+    // ============================
+    // EVENTS
+    // ============================
+
+    const unsubscribeEvents = onSnapshot(
+      collection(db, 'events'),
+      (snapshot) => {
+        setEventsCount(snapshot.size);
+
+        const eventData: DashboardEvent[] =
+          snapshot.docs.map((eventDoc) => {
+            const data = eventDoc.data();
+
+            return {
+              id: eventDoc.id,
+              title: data.title || '',
+              date: data.date || '',
+              time: data.time || '',
+              location: data.location || '',
+              type: data.type || '',
+              status: data.status || 'upcoming',
+              createdAt: data.createdAt || null,
+            };
+          });
+
+        // Sort newest first without requiring a Firestore index.
+        eventData.sort((a, b) => {
+          const aTime =
+            a.createdAt?.toMillis?.() || 0;
+
+          const bTime =
+            b.createdAt?.toMillis?.() || 0;
+
+          return bTime - aTime;
+        });
+
+        const upcoming = eventData.filter(
+          (event) =>
+            event.status.toLowerCase() ===
+            'upcoming'
+        );
+
+        setUpcomingEvents(
+          upcoming.slice(0, 5)
+        );
+      },
+      (error) => {
+        console.error(
+          'Events dashboard error:',
+          error
+        );
+
+        setError(
+          'Some dashboard data could not be loaded.'
+        );
+      }
+    );
+
+    setLoading(false);
+
+    return () => {
+      unsubscribeStudents();
+      unsubscribeTeachers();
+      unsubscribeClasses();
+      unsubscribeEvents();
+    };
+  }, []);
+
+  // ============================
+  // NAVIGATION
+  // ============================
+
+  const goToStudents = () => {
+    router.push('/admin/students' as any);
+  };
+
+  const goToTeachers = () => {
+    router.push('/admin/teachers' as any);
+  };
+
+  const goToClasses = () => {
+    router.push('/admin/classes' as any);
+  };
+
+  const goToEvents = () => {
+    router.push('/admin/events' as any);
+  };
+
+  const goToNewEvent = () => {
+    router.push('/admin/events/new' as any);
+  };
+
+  // ============================
+  // LOADING
+  // ============================
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator
+          size="large"
+          color="#061B5E"
+        />
+
+        <Text style={styles.loadingText}>
+          Loading dashboard...
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
+
+      <AdminHeader title="Dashboard" />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* ================================
-            TOP HEADER
-        ================================= */}
 
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.pageTitle}>
-              Dashboard
-            </Text>
+        {/* ============================
+            WELCOME
+        ============================ */}
 
-            <Text style={styles.pageSubtitle}>
-              Welcome back, Administrator
-            </Text>
-          </View>
+        <View style={styles.welcomeSection}>
 
-          <View style={styles.headerRight}>
-            {/* Notification */}
-            <Pressable style={styles.headerIconButton}>
-              <Ionicons
-                name="notifications-outline"
-                size={23}
-                color="#061B5E"
-              />
-
-              <View style={styles.notificationDot} />
-            </Pressable>
-
-            {/* Admin profile */}
-            <Pressable style={styles.profileButton}>
-              <View style={styles.profileAvatar}>
-                <Ionicons
-                  name="person"
-                  size={20}
-                  color="#FFFFFF"
-                />
-              </View>
-
-              <View>
-                <Text style={styles.profileName}>
-                  Administrator
-                </Text>
-
-                <Text style={styles.profileRole}>
-                  Admin
-                </Text>
-              </View>
-
-              <Ionicons
-                name="chevron-down"
-                size={17}
-                color="#777777"
-              />
-            </Pressable>
-          </View>
-        </View>
-
-        {/* ================================
-            WELCOME CARD
-        ================================= */}
-
-        <View style={styles.welcomeCard}>
           <View style={styles.welcomeTextContainer}>
+
             <Text style={styles.welcomeTitle}>
-              Welcome to your Administration
+              Admin Dashboard
             </Text>
 
-            <Text style={styles.welcomeDescription}>
-              Manage students, teachers, classes and
-              school activities from one place.
+            <Text style={styles.welcomeSubtitle}>
+              Overview of your school activities.
             </Text>
 
-            <Pressable style={styles.viewButton}>
-              <Text style={styles.viewButtonText}>
-                View school overview
-              </Text>
-
-              <Ionicons
-                name="arrow-forward"
-                size={18}
-                color="#FFFFFF"
-              />
-            </Pressable>
           </View>
 
-          <View style={styles.welcomeIcon}>
+          <Pressable
+            style={styles.addEventButton}
+            onPress={goToNewEvent}
+          >
             <Ionicons
-              name="school-outline"
-              size={82}
+              name="add"
+              size={20}
               color="#FFFFFF"
             />
-          </View>
+
+            <Text style={styles.addEventText}>
+              New Event
+            </Text>
+          </Pressable>
+
         </View>
 
-        {/* ================================
-            STATISTICS
-        ================================= */}
+        {/* ============================
+            ERROR
+        ============================ */}
 
-        <Text style={styles.sectionTitle}>
-          School Overview
-        </Text>
+        {error ? (
+          <View style={styles.errorBanner}>
+
+            <Ionicons
+              name="warning-outline"
+              size={20}
+              color="#C62828"
+            />
+
+            <Text style={styles.errorBannerText}>
+              {error}
+            </Text>
+
+          </View>
+        ) : null}
+
+        {/* ============================
+            STATISTICS
+        ============================ */}
 
         <View style={styles.statsGrid}>
 
-          {/* Students */}
-
-          <View style={styles.statCard}>
-            <View
-              style={[
-                styles.statIcon,
-                styles.studentsIcon,
-              ]}
-            >
+          <Pressable
+            style={styles.statCard}
+            onPress={goToStudents}
+          >
+            <View style={styles.statIcon}>
               <Ionicons
                 name="people-outline"
                 size={25}
-                color="#1555E8"
+                color="#061B5E"
               />
             </View>
 
             <Text style={styles.statNumber}>
-              1,023
+              {studentsCount}
             </Text>
 
             <Text style={styles.statLabel}>
               Students
             </Text>
+          </Pressable>
 
-            <View style={styles.statFooter}>
-              <Ionicons
-                name="trending-up"
-                size={15}
-                color="#21A366"
-              />
-
-              <Text style={styles.growthText}>
-                +8.2% this month
-              </Text>
-            </View>
-          </View>
-
-          {/* Teachers */}
-
-          <View style={styles.statCard}>
-            <View
-              style={[
-                styles.statIcon,
-                styles.teachersIcon,
-              ]}
-            >
+          <Pressable
+            style={styles.statCard}
+            onPress={goToTeachers}
+          >
+            <View style={styles.statIcon}>
               <Ionicons
                 name="school-outline"
                 size={25}
-                color="#7B42F6"
+                color="#061B5E"
               />
             </View>
 
             <Text style={styles.statNumber}>
-              48
+              {teachersCount}
             </Text>
 
             <Text style={styles.statLabel}>
               Teachers
             </Text>
+          </Pressable>
 
-            <View style={styles.statFooter}>
+          <Pressable
+            style={styles.statCard}
+            onPress={goToClasses}
+          >
+            <View style={styles.statIcon}>
               <Ionicons
-                name="trending-up"
-                size={15}
-                color="#21A366"
-              />
-
-              <Text style={styles.growthText}>
-                +3 this month
-              </Text>
-            </View>
-          </View>
-
-          {/* Parents */}
-
-          <View style={styles.statCard}>
-            <View
-              style={[
-                styles.statIcon,
-                styles.parentsIcon,
-              ]}
-            >
-              <Ionicons
-                name="people-circle-outline"
+                name="book-outline"
                 size={25}
-                color="#F39C12"
+                color="#061B5E"
               />
             </View>
 
             <Text style={styles.statNumber}>
-              890
-            </Text>
-
-            <Text style={styles.statLabel}>
-              Parents
-            </Text>
-
-            <View style={styles.statFooter}>
-              <Ionicons
-                name="trending-up"
-                size={15}
-                color="#21A366"
-              />
-
-              <Text style={styles.growthText}>
-                +5.4% this month
-              </Text>
-            </View>
-          </View>
-
-          {/* Classes */}
-
-          <View style={styles.statCard}>
-            <View
-              style={[
-                styles.statIcon,
-                styles.classesIcon,
-              ]}
-            >
-              <Ionicons
-                name="library-outline"
-                size={25}
-                color="#E84D8A"
-              />
-            </View>
-
-            <Text style={styles.statNumber}>
-              32
+              {classesCount}
             </Text>
 
             <Text style={styles.statLabel}>
               Classes
             </Text>
+          </Pressable>
 
-            <View style={styles.statFooter}>
+          <Pressable
+            style={styles.statCard}
+            onPress={goToEvents}
+          >
+            <View style={styles.statIcon}>
               <Ionicons
-                name="remove-outline"
-                size={15}
-                color="#777777"
+                name="calendar-outline"
+                size={25}
+                color="#061B5E"
               />
-
-              <Text style={styles.neutralText}>
-                No changes
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* ================================
-            LOWER SECTION
-        ================================= */}
-
-        <View style={styles.bottomSection}>
-
-          {/* Recent Activity */}
-
-          <View style={styles.activityContainer}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>
-                Recent Activity
-              </Text>
-
-              <Pressable>
-                <Text style={styles.seeAll}>
-                  See all
-                </Text>
-              </Pressable>
             </View>
 
-            {/* Activity 1 */}
-
-            <View style={styles.activityCard}>
-              <View
-                style={[
-                  styles.activityIcon,
-                  styles.blueActivity,
-                ]}
-              >
-                <Ionicons
-                  name="person-add-outline"
-                  size={20}
-                  color="#1555E8"
-                />
-              </View>
-
-              <View style={styles.activityContent}>
-                <Text style={styles.activityTitle}>
-                  New student registered
-                </Text>
-
-                <Text style={styles.activityDescription}>
-                  A new student was added to Primary 5A.
-                </Text>
-
-                <Text style={styles.activityTime}>
-                  10 minutes ago
-                </Text>
-              </View>
-            </View>
-
-            {/* Activity 2 */}
-
-            <View style={styles.activityCard}>
-              <View
-                style={[
-                  styles.activityIcon,
-                  styles.purpleActivity,
-                ]}
-              >
-                <Ionicons
-                  name="school-outline"
-                  size={20}
-                  color="#7B42F6"
-                />
-              </View>
-
-              <View style={styles.activityContent}>
-                <Text style={styles.activityTitle}>
-                  Teacher added
-                </Text>
-
-                <Text style={styles.activityDescription}>
-                  A new teacher joined the school.
-                </Text>
-
-                <Text style={styles.activityTime}>
-                  1 hour ago
-                </Text>
-              </View>
-            </View>
-
-            {/* Activity 3 */}
-
-            <View style={styles.activityCard}>
-              <View
-                style={[
-                  styles.activityIcon,
-                  styles.orangeActivity,
-                ]}
-              >
-                <Ionicons
-                  name="calendar-outline"
-                  size={20}
-                  color="#F39C12"
-                />
-              </View>
-
-              <View style={styles.activityContent}>
-                <Text style={styles.activityTitle}>
-                  New event created
-                </Text>
-
-                <Text style={styles.activityDescription}>
-                  School meeting scheduled for Friday.
-                </Text>
-
-                <Text style={styles.activityTime}>
-                  3 hours ago
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Quick Actions */}
-
-          <View style={styles.quickContainer}>
-            <Text style={styles.sectionTitle}>
-              Quick Actions
+            <Text style={styles.statNumber}>
+              {eventsCount}
             </Text>
 
-            <Pressable style={styles.quickAction}>
-              <View
-                style={[
-                  styles.quickIcon,
-                  styles.quickBlue,
-                ]}
-              >
-                <Ionicons
-                  name="person-add-outline"
-                  size={22}
-                  color="#1555E8"
-                />
-              </View>
+            <Text style={styles.statLabel}>
+              Events
+            </Text>
+          </Pressable>
 
-              <View style={styles.quickTextContainer}>
-                <Text style={styles.quickTitle}>
-                  Add Student
-                </Text>
-
-                <Text style={styles.quickSubtitle}>
-                  Register a new student
-                </Text>
-              </View>
-
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color="#999999"
-              />
-            </Pressable>
-
-            <Pressable style={styles.quickAction}>
-              <View
-                style={[
-                  styles.quickIcon,
-                  styles.quickPurple,
-                ]}
-              >
-                <Ionicons
-                  name="person-add-outline"
-                  size={22}
-                  color="#7B42F6"
-                />
-              </View>
-
-              <View style={styles.quickTextContainer}>
-                <Text style={styles.quickTitle}>
-                  Add Teacher
-                </Text>
-
-                <Text style={styles.quickSubtitle}>
-                  Add a school teacher
-                </Text>
-              </View>
-
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color="#999999"
-              />
-            </Pressable>
-
-            <Pressable style={styles.quickAction}>
-              <View
-                style={[
-                  styles.quickIcon,
-                  styles.quickOrange,
-                ]}
-              >
-                <Ionicons
-                  name="calendar-outline"
-                  size={22}
-                  color="#F39C12"
-                />
-              </View>
-
-              <View style={styles.quickTextContainer}>
-                <Text style={styles.quickTitle}>
-                  Create Event
-                </Text>
-
-                <Text style={styles.quickSubtitle}>
-                  Schedule a school event
-                </Text>
-              </View>
-
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color="#999999"
-              />
-            </Pressable>
-          </View>
         </View>
+
+        {/* ============================
+            QUICK ACTIONS
+        ============================ */}
+
+        <View style={styles.sectionHeader}>
+
+          <Text style={styles.sectionTitle}>
+            Quick Actions
+          </Text>
+
+        </View>
+
+        <View style={styles.quickActions}>
+
+          <Pressable
+            style={styles.quickAction}
+            onPress={goToStudents}
+          >
+            <Ionicons
+              name="people-outline"
+              size={24}
+              color="#061B5E"
+            />
+
+            <Text style={styles.quickActionText}>
+              Students
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.quickAction}
+            onPress={goToTeachers}
+          >
+            <Ionicons
+              name="school-outline"
+              size={24}
+              color="#061B5E"
+            />
+
+            <Text style={styles.quickActionText}>
+              Teachers
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.quickAction}
+            onPress={goToClasses}
+          >
+            <Ionicons
+              name="book-outline"
+              size={24}
+              color="#061B5E"
+            />
+
+            <Text style={styles.quickActionText}>
+              Classes
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.quickAction}
+            onPress={goToNewEvent}
+          >
+            <Ionicons
+              name="calendar-outline"
+              size={24}
+              color="#061B5E"
+            />
+
+            <Text style={styles.quickActionText}>
+              New Event
+            </Text>
+          </Pressable>
+
+        </View>
+
+        {/* ============================
+            UPCOMING EVENTS
+        ============================ */}
+
+        <View style={styles.sectionHeader}>
+
+          <Text style={styles.sectionTitle}>
+            Upcoming Events
+          </Text>
+
+          <Pressable onPress={goToEvents}>
+            <Text style={styles.viewAll}>
+              View all
+            </Text>
+          </Pressable>
+
+        </View>
+
+        {upcomingEvents.length === 0 ? (
+
+          <View style={styles.emptyEvents}>
+
+            <Ionicons
+              name="calendar-outline"
+              size={45}
+              color="#B7BFCD"
+            />
+
+            <Text style={styles.emptyTitle}>
+              No upcoming events
+            </Text>
+
+            <Text style={styles.emptyText}>
+              Create an event to see it here.
+            </Text>
+
+            <Pressable
+              style={styles.createEventButton}
+              onPress={goToNewEvent}
+            >
+              <Text
+                style={styles.createEventButtonText}
+              >
+                Create Event
+              </Text>
+            </Pressable>
+
+          </View>
+
+        ) : (
+
+          <View>
+            {upcomingEvents.map((event) => (
+              <Pressable
+                key={event.id}
+                style={styles.eventCard}
+                onPress={goToEvents}
+              >
+
+                <View style={styles.eventIcon}>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={23}
+                    color="#061B5E"
+                  />
+                </View>
+
+                <View style={styles.eventInfo}>
+
+                  <Text
+                    style={styles.eventTitle}
+                    numberOfLines={1}
+                  >
+                    {event.title ||
+                      'Untitled Event'}
+                  </Text>
+
+                  <Text style={styles.eventDate}>
+                    {event.date ||
+                      'Date not set'}
+
+                    {event.time
+                      ? ` • ${event.time}`
+                      : ''}
+                  </Text>
+
+                  {event.location ? (
+                    <Text
+                      style={styles.eventLocation}
+                      numberOfLines={1}
+                    >
+                      {event.location}
+                    </Text>
+                  ) : null}
+
+                </View>
+
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color="#9AA3B2"
+                />
+
+              </Pressable>
+            ))}
+          </View>
+
+        )}
+
       </ScrollView>
     </View>
   );
@@ -494,361 +575,242 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F7FB',
   },
 
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F7FB',
+  },
+
+  loadingText: {
+    marginTop: 12,
+    color: '#7A8497',
+    fontSize: 14,
+  },
+
   scrollContent: {
     padding: 24,
     paddingBottom: 40,
   },
 
-  /* Header */
-
-  header: {
-    minHeight: 70,
+  welcomeSection: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 22,
-  },
-
-  pageTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#061B5E',
-  },
-
-  pageSubtitle: {
-    marginTop: 4,
-    fontSize: 14,
-    color: '#777777',
-  },
-
-  headerRight: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 15,
-  },
-
-  headerIconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  notificationDot: {
-    position: 'absolute',
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#FF4D4D',
-    top: 9,
-    right: 9,
-  },
-
-  profileButton: {
-    height: 52,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 15,
-    paddingHorizontal: 10,
-    paddingRight: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 9,
-  },
-
-  profileAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#1555E8',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  profileName: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#222222',
-  },
-
-  profileRole: {
-    fontSize: 11,
-    color: '#888888',
-    marginTop: 2,
-  },
-
-  /* Welcome */
-
-  welcomeCard: {
-    minHeight: 190,
-    borderRadius: 24,
-    backgroundColor: '#061B5E',
-    padding: 28,
-    flexDirection: 'row',
-    alignItems: 'center',
-    overflow: 'hidden',
-    marginBottom: 30,
+    marginBottom: 24,
   },
 
   welcomeTextContainer: {
     flex: 1,
+    marginRight: 15,
   },
 
   welcomeTitle: {
-    color: '#FFFFFF',
-    fontSize: 25,
-    fontWeight: '800',
-    marginBottom: 10,
-  },
-
-  welcomeDescription: {
-    color: '#DCE5FF',
-    fontSize: 14,
-    lineHeight: 21,
-    maxWidth: 550,
-  },
-
-  viewButton: {
-    alignSelf: 'flex-start',
-    marginTop: 20,
-    backgroundColor: '#1555E8',
-    borderRadius: 12,
-    paddingHorizontal: 17,
-    paddingVertical: 11,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-
-  viewButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 27,
     fontWeight: '700',
-  },
-
-  welcomeIcon: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 25,
-  },
-
-  /* Section */
-
-  sectionTitle: {
-    fontSize: 19,
-    fontWeight: '800',
     color: '#061B5E',
   },
 
-  sectionHeader: {
+  welcomeSubtitle: {
+    fontSize: 14,
+    color: '#7A8497',
+    marginTop: 5,
+  },
+
+  addEventButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 15,
+    backgroundColor: '#061B5E',
+    paddingHorizontal: 16,
+    height: 44,
+    borderRadius: 10,
+    gap: 6,
   },
 
-  seeAll: {
-    color: '#1555E8',
+  addEventText: {
+    color: '#FFFFFF',
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
   },
 
-  /* Statistics */
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FDECEC',
+    borderWidth: 1,
+    borderColor: '#F5C2C2',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 18,
+  },
+
+  errorBannerText: {
+    flex: 1,
+    color: '#C62828',
+    fontSize: 13,
+    marginLeft: 8,
+  },
 
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
-    marginTop: 16,
-    marginBottom: 30,
+    gap: 12,
   },
 
   statCard: {
-    flex: 1,
-    minWidth: 190,
+    width: '48%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    minHeight: 165,
+    borderRadius: 15,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#E8EBF2',
   },
 
   statIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    justifyContent: 'center',
+    width: 45,
+    height: 45,
+    borderRadius: 12,
+    backgroundColor: '#EAF0FF',
     alignItems: 'center',
-    marginBottom: 15,
-  },
-
-  studentsIcon: {
-    backgroundColor: '#E9F0FF',
-  },
-
-  teachersIcon: {
-    backgroundColor: '#F0E9FF',
-  },
-
-  parentsIcon: {
-    backgroundColor: '#FFF3DF',
-  },
-
-  classesIcon: {
-    backgroundColor: '#FFE8F0',
+    justifyContent: 'center',
+    marginBottom: 14,
   },
 
   statNumber: {
     fontSize: 27,
-    fontWeight: '800',
-    color: '#1D1D1D',
+    fontWeight: '700',
+    color: '#061B5E',
   },
 
   statLabel: {
-    color: '#777777',
     fontSize: 13,
-    marginTop: 2,
+    color: '#7A8497',
+    marginTop: 4,
   },
 
-  statFooter: {
+  sectionHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 12,
-    gap: 5,
+    marginTop: 28,
+    marginBottom: 12,
   },
 
-  growthText: {
-    color: '#21A366',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-
-  neutralText: {
-    color: '#888888',
-    fontSize: 11,
-  },
-
-  /* Bottom */
-
-  bottomSection: {
-    flexDirection: 'row',
-    gap: 20,
-  },
-
-  activityContainer: {
-    flex: 1.5,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-  },
-
-  activityCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-  },
-
-  activityIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 13,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 13,
-  },
-
-  blueActivity: {
-    backgroundColor: '#E9F0FF',
-  },
-
-  purpleActivity: {
-    backgroundColor: '#F0E9FF',
-  },
-
-  orangeActivity: {
-    backgroundColor: '#FFF3DF',
-  },
-
-  activityContent: {
-    flex: 1,
-  },
-
-  activityTitle: {
-    color: '#222222',
-    fontSize: 13,
+  sectionTitle: {
+    fontSize: 19,
     fontWeight: '700',
+    color: '#172033',
   },
 
-  activityDescription: {
-    color: '#777777',
-    fontSize: 11,
-    marginTop: 3,
+  viewAll: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#061B5E',
   },
 
-  activityTime: {
-    color: '#AAAAAA',
-    fontSize: 10,
-    marginTop: 5,
-  },
-
-  /* Quick actions */
-
-  quickContainer: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
+  quickActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
   },
 
   quickAction: {
-    minHeight: 72,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
+    width: '48%',
+    minHeight: 82,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E8EBF2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  quickActionText: {
+    marginTop: 7,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#172033',
+  },
+
+  eventCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 15,
+    marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#E8EBF2',
   },
 
-  quickIcon: {
-    width: 42,
-    height: 42,
+  eventIcon: {
+    width: 48,
+    height: 48,
     borderRadius: 12,
-    justifyContent: 'center',
+    backgroundColor: '#EAF0FF',
     alignItems: 'center',
-    marginRight: 12,
+    justifyContent: 'center',
+    marginRight: 13,
   },
 
-  quickBlue: {
-    backgroundColor: '#E9F0FF',
-  },
-
-  quickPurple: {
-    backgroundColor: '#F0E9FF',
-  },
-
-  quickOrange: {
-    backgroundColor: '#FFF3DF',
-  },
-
-  quickTextContainer: {
+  eventInfo: {
     flex: 1,
+    marginRight: 10,
   },
 
-  quickTitle: {
-    color: '#222222',
-    fontSize: 13,
+  eventTitle: {
+    fontSize: 14,
     fontWeight: '700',
+    color: '#172033',
   },
 
-  quickSubtitle: {
-    color: '#888888',
-    fontSize: 10,
+  eventDate: {
+    fontSize: 12,
+    color: '#667085',
+    marginTop: 5,
+  },
+
+  eventLocation: {
+    fontSize: 11,
+    color: '#8A94A6',
     marginTop: 3,
+  },
+
+  emptyEvents: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#E8EBF2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 30,
+  },
+
+  emptyTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#172033',
+    marginTop: 10,
+  },
+
+  emptyText: {
+    fontSize: 13,
+    color: '#7A8497',
+    textAlign: 'center',
+    marginTop: 5,
+  },
+
+  createEventButton: {
+    backgroundColor: '#061B5E',
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    borderRadius: 9,
+    marginTop: 15,
+  },
+
+  createEventButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

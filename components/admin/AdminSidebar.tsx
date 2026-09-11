@@ -29,7 +29,7 @@ const sidebarItems: SidebarItem[] = [
   {
     label: 'Teachers',
     icon: 'school-outline',
-    route: '/admin/teachers',
+    route: '/admin/teacher',
   },
   {
     label: 'Classes',
