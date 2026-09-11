@@ -56,6 +56,8 @@ export default function RegisterScreen() {
   const [showConfirmPassword, setShowConfirmPassword] =
     useState(false);
 
+    const [phone, setPhone] = useState('');
+
   // UI states
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -114,12 +116,13 @@ export default function RegisterScreen() {
        * Create Firebase Authentication account
        * and save the selected role in Firestore.
        */
-      await registerUser(
-        fullName,
-        email,
-        password,
-        role
-      );
+     await registerUser(
+  fullName,
+  email,
+  password,
+  role,
+  phone
+);
 
       /**
        * Admin dashboard exists now.
@@ -290,6 +293,29 @@ export default function RegisterScreen() {
                   editable={!submitting}
                 />
               </View>
+              {/* PHONE NUMBER */}
+<Text style={styles.label}>
+  Phone Number
+</Text>
+
+<View style={styles.inputContainer}>
+  <Ionicons
+    name="call-outline"
+    size={20}
+    color="#777777"
+  />
+
+  <TextInput
+    style={styles.input}
+    placeholder="Enter your phone number"
+    placeholderTextColor="#999999"
+    value={phone}
+    onChangeText={setPhone}
+    keyboardType="phone-pad"
+    autoCorrect={false}
+    editable={!submitting}
+  />
+</View>
 
               {/* PASSWORD */}
               <Text style={styles.label}>

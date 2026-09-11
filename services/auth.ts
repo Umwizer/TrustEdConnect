@@ -40,10 +40,12 @@ export const registerUser = async (
   fullName: string,
   email: string,
   password: string,
-  role: 'admin' | 'teacher' | 'parent'
+  role: 'admin' | 'teacher' | 'parent',
+  phone: string
 ) => {
   const cleanName = fullName.trim();
   const cleanEmail = email.trim().toLowerCase();
+  const cleanPhone = phone.trim();
 
   const userCredential =
     await createUserWithEmailAndPassword(
@@ -62,13 +64,14 @@ export const registerUser = async (
     uid: user.uid,
     fullName: cleanName,
     email: cleanEmail,
+    phone: cleanPhone,
     role: role,
     createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
   });
 
   return userCredential;
 };
-
 /**
  * Sign in with Google credential
  */

@@ -11,6 +11,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
+import {
+  addDoc,
+  collection,
+  serverTimestamp,
+} from 'firebase/firestore';
+
+import { db } from '../../../../services/firebase';
+
 import AdminHeader from '../../../../components/admin/AdminHeader';
 
 const eventTypes = [
@@ -26,13 +34,21 @@ export default function NewEventScreen() {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [location, setLocation] = useState('');
-  const [eventType, setEventType] =
-    useState('School');
+  const [eventType, setEventType] = useState('School');
 
-  const [showTypes, setShowTypes] =
-    useState(false);
+  const [showTypes, setShowTypes] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const handleCreateEvent = () => {
+  /* =====================================================
+     CREATE EVENT
+     ===================================================== */
+
+  const handleCreateEvent = async () => {
+    if (saving) {
+      return;
+    }
+
+    // Validate title
     if (!title.trim()) {
       Alert.alert(
         'Missing Information',
@@ -41,6 +57,7 @@ export default function NewEventScreen() {
       return;
     }
 
+    // Validate date
     if (!date.trim()) {
       Alert.alert(
         'Missing Information',
@@ -49,18 +66,64 @@ export default function NewEventScreen() {
       return;
     }
 
-    Alert.alert(
-      'Event Created',
-      'The event has been created successfully.',
-      [
-        {
-          text: 'OK',
-          onPress: () =>
-            router.replace('/admin/events' as any),
-        },
-      ]
-    );
+    try {
+      setSaving(true);
+
+      /*
+       * Save the event to Firestore.
+       *
+       * Collection:
+       * events
+       */
+      const eventData = {
+        title: title.trim(),
+        description: description.trim(),
+        date: date.trim(),
+        time: time.trim(),
+        location: location.trim(),
+        type: eventType,
+        status: 'upcoming',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+
+      await addDoc(
+        collection(db, 'events'),
+        eventData
+      );
+
+      setSaving(false);
+
+      Alert.alert(
+        'Event Created',
+        'The event has been saved successfully.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              router.replace('/admin/events' as any);
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error(
+        'Error creating event:',
+        error
+      );
+
+      setSaving(false);
+
+      Alert.alert(
+        'Error',
+        'The event could not be saved. Please check your internet connection and try again.'
+      );
+    }
   };
+
+  /* =====================================================
+     UI
+     ===================================================== */
 
   return (
     <View style={styles.container}>
@@ -69,14 +132,13 @@ export default function NewEventScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
       >
         {/* Back */}
 
         <Pressable
           style={styles.backButton}
-          onPress={() =>
-            router.back()
-          }
+          onPress={() => router.back()}
         >
           <Ionicons
             name="arrow-back"
@@ -117,6 +179,7 @@ export default function NewEventScreen() {
             onChangeText={setTitle}
             placeholder="e.g. Parent-Teacher Meeting"
             placeholderTextColor="#9AA3B2"
+            editable={!saving}
           />
 
           {/* Description */}
@@ -134,6 +197,7 @@ export default function NewEventScreen() {
             placeholderTextColor="#9AA3B2"
             multiline
             textAlignVertical="top"
+            editable={!saving}
           />
 
           {/* Event type */}
@@ -149,6 +213,7 @@ export default function NewEventScreen() {
               onPress={() =>
                 setShowTypes(!showTypes)
               }
+              disabled={saving}
             >
               <Text style={styles.selectText}>
                 {eventType}
@@ -198,6 +263,8 @@ export default function NewEventScreen() {
           {/* Date and time */}
 
           <View style={styles.twoColumnRow}>
+            {/* Date */}
+
             <View style={styles.column}>
               <FormLabel
                 label="Date"
@@ -217,9 +284,12 @@ export default function NewEventScreen() {
                   onChangeText={setDate}
                   placeholder="YYYY-MM-DD"
                   placeholderTextColor="#9AA3B2"
+                  editable={!saving}
                 />
               </View>
             </View>
+
+            {/* Time */}
 
             <View style={styles.column}>
               <FormLabel label="Time" />
@@ -237,6 +307,7 @@ export default function NewEventScreen() {
                   onChangeText={setTime}
                   placeholder="09:00 AM - 12:00 PM"
                   placeholderTextColor="#9AA3B2"
+                  editable={!saving}
                 />
               </View>
             </View>
@@ -259,6 +330,7 @@ export default function NewEventScreen() {
               onChangeText={setLocation}
               placeholder="e.g. School Main Hall"
               placeholderTextColor="#9AA3B2"
+              editable={!saving}
             />
           </View>
 
@@ -281,30 +353,56 @@ export default function NewEventScreen() {
           {/* Buttons */}
 
           <View style={styles.buttonRow}>
+            {/* Cancel */}
+
             <Pressable
-              style={styles.cancelButton}
-              onPress={() =>
-                router.back()
-              }
+              style={[
+                styles.cancelButton,
+                saving && styles.disabledButton,
+              ]}
+              onPress={() => router.back()}
+              disabled={saving}
             >
               <Text style={styles.cancelText}>
                 Cancel
               </Text>
             </Pressable>
 
-            <Pressable
-              style={styles.createButton}
-              onPress={handleCreateEvent}
-            >
-              <Ionicons
-                name="checkmark"
-                size={20}
-                color="#FFFFFF"
-              />
+            {/* Create */}
 
-              <Text style={styles.createText}>
-                Create Event
-              </Text>
+            <Pressable
+              style={[
+                styles.createButton,
+                saving && styles.disabledCreateButton,
+              ]}
+              onPress={handleCreateEvent}
+              disabled={saving}
+            >
+              {saving ? (
+                <>
+                  <Ionicons
+                    name="cloud-upload-outline"
+                    size={20}
+                    color="#FFFFFF"
+                  />
+
+                  <Text style={styles.createText}>
+                    Saving...
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons
+                    name="checkmark"
+                    size={20}
+                    color="#FFFFFF"
+                  />
+
+                  <Text style={styles.createText}>
+                    Create Event
+                  </Text>
+                </>
+              )}
             </Pressable>
           </View>
         </View>
@@ -354,6 +452,10 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
 
+  /* =====================================================
+     BACK
+     ===================================================== */
+
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -366,6 +468,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
+
+  /* =====================================================
+     HEADING
+     ===================================================== */
 
   heading: {
     marginBottom: 20,
@@ -383,6 +489,10 @@ const styles = StyleSheet.create({
     color: '#7B8497',
   },
 
+  /* =====================================================
+     FORM CARD
+     ===================================================== */
+
   formCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
@@ -390,6 +500,10 @@ const styles = StyleSheet.create({
     borderColor: '#E9EDF4',
     padding: 22,
   },
+
+  /* =====================================================
+     LABEL
+     ===================================================== */
 
   label: {
     fontSize: 13,
@@ -402,6 +516,10 @@ const styles = StyleSheet.create({
   required: {
     color: '#E5484D',
   },
+
+  /* =====================================================
+     INPUT
+     ===================================================== */
 
   input: {
     height: 48,
@@ -419,6 +537,10 @@ const styles = StyleSheet.create({
     height: 105,
     paddingTop: 13,
   },
+
+  /* =====================================================
+     EVENT TYPE
+     ===================================================== */
 
   selectWrapper: {
     position: 'relative',
@@ -482,6 +604,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
+  /* =====================================================
+     DATE / TIME
+     ===================================================== */
+
   twoColumnRow: {
     flexDirection: 'row',
     gap: 15,
@@ -510,6 +636,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
+  /* =====================================================
+     INFORMATION
+     ===================================================== */
+
   infoBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -527,6 +657,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
   },
+
+  /* =====================================================
+     BUTTONS
+     ===================================================== */
 
   buttonRow: {
     flexDirection: 'row',
@@ -565,5 +699,13 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '700',
+  },
+
+  disabledButton: {
+    opacity: 0.6,
+  },
+
+  disabledCreateButton: {
+    opacity: 0.7,
   },
 });
