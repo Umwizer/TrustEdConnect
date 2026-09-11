@@ -1,9 +1,9 @@
+// app/register.tsx
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   SafeAreaView,
@@ -27,95 +27,72 @@ export default function RegisterScreen() {
       ? 'teacher'
       : params.role === 'admin'
       ? 'admin'
-      : 'parent';
+      : params.role === 'parent'
+      ? 'parent'
+      : 'teacher';
 
   const [role, setRole] = useState<UserRole>(initialRole);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [showRoleModal, setShowRoleModal] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const roleName = role.charAt(0).toUpperCase() + role.slice(1);
+  const roleName =
+    role === 'admin' ? 'Administrator' : role === 'teacher' ? 'Teacher' : 'Parent';
 
-  const redirectBasedOnRole = (selectedRole: string) => {
-    if (selectedRole === 'admin') {
-      router.replace('/admin' as any);
-    } else if (selectedRole === 'parent') {
-      router.replace('/parent-dashboard' as any);
-    } else {
-      router.replace('/(tabs)' as any);
-    }
-  };
+  const roleOptions: { value: UserRole; label: string; icon: any }[] = [
+    { value: 'teacher', label: 'Teacher', icon: 'school-outline' },
+    { value: 'admin', label: 'Admin', icon: 'shield-checkmark-outline' },
+    { value: 'parent', label: 'Parent', icon: 'people-outline' },
+  ];
 
   const handleRegister = async () => {
     setError('');
+    if (!fullName.trim()) return setError('Please enter your full name.');
+    if (!email.trim()) return setError('Please enter your email.');
 
-    if (!fullName.trim()) {
-      setError('Please enter your full name.');
-      return;
-    }
-    if (!email.trim()) {
-      setError('Please enter your email address.');
-      return;
-    }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      setError('Please enter a valid email address.');
-      return;
-    }
-    if (!password) {
-      setError('Please enter a password.');
-      return;
-    }
-    if (password.length < 6) {
-      setError('Password must contain at least 6 characters.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
+    if (!emailRegex.test(email.trim())) return setError('Enter a valid email.');
+
+    if (!password) return setError('Please enter a password.');
+    if (password.length < 6) return setError('Password must be at least 6 characters.');
+    if (password !== confirmPassword) return setError('Passwords do not match.');
 
     try {
-      setLoading(true);
+      setSubmitting(true);
       await registerUser(fullName, email, password, role);
 
-      Alert.alert(
-        'Account Created',
-        `Your ${role} account has been created successfully.`,
-        [
-          {
-            text: 'Continue',
-            onPress: () => redirectBasedOnRole(role),
-          },
-        ]
-      );
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      if (error?.code === 'auth/email-already-in-use') {
-        setError('An account with this email already exists.');
-      } else if (error?.code === 'auth/invalid-email') {
-        setError('Please enter a valid email address.');
-      } else if (error?.code === 'auth/weak-password') {
-        setError('Password is too weak. Use at least 6 characters.');
-      } else if (error?.code === 'auth/network-request-failed') {
-        setError('Network error. Please check your internet connection.');
+      if (role === 'admin') {
+        router.replace('/admin' as any);
       } else {
-        setError(error?.message || 'Something went wrong while creating your account.');
+        router.replace('/login' as any);
+      }
+    } catch (err: any) {
+      if (err?.code === 'auth/email-already-in-use') {
+        setError('An account with this email already exists.');
+      } else if (err?.code === 'auth/invalid-email') {
+        setError('Please enter a valid email address.');
+      } else if (err?.code === 'auth/weak-password') {
+        setError('Password is too weak. Use at least 6 characters.');
+      } else if (err?.code === 'auth/network-request-failed') {
+        setError('Network error. Check your connection.');
+      } else {
+        setError(err?.message || 'Something went wrong.');
       }
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
   const handleBackToLogin = () => {
-    router.replace('/login');
+    router.replace({
+      pathname: '/login',
+      params: { role },
+    } as any);
   };
 
   return (
@@ -130,7 +107,11 @@ export default function RegisterScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.container}>
-            <Pressable style={styles.backButton} onPress={handleBackToLogin} disabled={loading}>
+            <Pressable
+              style={styles.backButton}
+              onPress={handleBackToLogin}
+              disabled={submitting}
+            >
               <Ionicons name="arrow-back" size={23} color="#061B5E" />
               <Text style={styles.backText}>Back to Login</Text>
             </Pressable>
@@ -155,86 +136,115 @@ export default function RegisterScreen() {
               </Text>
             </View>
 
+            <Text style={styles.label}>I am a</Text>
+            <View style={styles.rolePicker}>
+              {roleOptions.map(opt => (
+                <Pressable
+                  key={opt.value}
+                  style={[
+                    styles.roleOption,
+                    role === opt.value && styles.roleOptionActive,
+                  ]}
+                  onPress={() => setRole(opt.value)}
+                  disabled={submitting}
+                >
+                  <Ionicons
+                    name={opt.icon}
+                    size={20}
+                    color={role === opt.value ? '#FFFFFF' : '#061B5E'}
+                  />
+                  <Text
+                    style={[
+                      styles.roleOptionText,
+                      role === opt.value && styles.roleOptionTextActive,
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
             <View style={styles.form}>
               <Text style={styles.label}>Full Name</Text>
               <View style={styles.inputContainer}>
-                <Ionicons name="person-outline" size={20} color="#777777" />
+                <Ionicons name="person-outline" size={20} color="#777" />
                 <TextInput
                   style={styles.input}
                   placeholder="Enter your full name"
-                  placeholderTextColor="#999999"
+                  placeholderTextColor="#999"
                   value={fullName}
                   onChangeText={setFullName}
                   autoCapitalize="words"
-                  editable={!loading}
+                  editable={!submitting}
                 />
               </View>
 
               <Text style={styles.label}>Email Address</Text>
               <View style={styles.inputContainer}>
-                <Ionicons name="mail-outline" size={20} color="#777777" />
+                <Ionicons name="mail-outline" size={20} color="#777" />
                 <TextInput
                   style={styles.input}
                   placeholder="Enter your email"
-                  placeholderTextColor="#999999"
+                  placeholderTextColor="#999"
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  editable={!loading}
+                  editable={!submitting}
                 />
               </View>
 
               <Text style={styles.label}>Password</Text>
               <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color="#777777" />
+                <Ionicons name="lock-closed-outline" size={20} color="#777" />
                 <TextInput
                   style={styles.input}
                   placeholder="Enter your password"
-                  placeholderTextColor="#999999"
+                  placeholderTextColor="#999"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
-                  editable={!loading}
+                  editable={!submitting}
                 />
-                <Pressable onPress={() => setShowPassword(!showPassword)} disabled={loading}>
+                <Pressable onPress={() => setShowPassword(!showPassword)}>
                   <Ionicons
-                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    name={showPassword ? 'eye-outline' : 'eye-off-outline'}
                     size={21}
-                    color="#777777"
+                    color="#777"
                   />
                 </Pressable>
               </View>
 
               <Text style={styles.label}>Confirm Password</Text>
               <View style={styles.inputContainer}>
-                <Ionicons name="shield-checkmark-outline" size={20} color="#777777" />
+                <Ionicons name="lock-closed-outline" size={20} color="#777" />
                 <TextInput
                   style={styles.input}
                   placeholder="Confirm your password"
-                  placeholderTextColor="#999999"
+                  placeholderTextColor="#999"
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   secureTextEntry={!showConfirmPassword}
                   autoCapitalize="none"
-                  editable={!loading}
+                  editable={!submitting}
                 />
-                <Pressable onPress={() => setShowConfirmPassword(!showConfirmPassword)} disabled={loading}>
+                <Pressable onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
                   <Ionicons
-                    name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                    name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
                     size={21}
-                    color="#777777"
+                    color="#777"
                   />
                 </Pressable>
               </View>
 
-              <Text style={styles.label}>Account Type</Text>
-              <Pressable style={styles.selectContainer} onPress={() => setShowRoleModal(true)} disabled={loading}>
-                <Ionicons name="people-outline" size={20} color="#777777" />
-                <Text style={styles.selectText}>{roleName}</Text>
-                <Ionicons name="chevron-down-outline" size={20} color="#777777" />
-              </Pressable>
+              <View style={styles.roleBox}>
+                <Ionicons name="information-circle-outline" size={20} color="#061B5E" />
+                <Text style={styles.roleText}>
+                  You are creating a <Text style={styles.roleBold}>{roleName}</Text> account.
+                </Text>
+              </View>
 
               {error ? (
                 <View style={styles.errorContainer}>
@@ -244,15 +254,17 @@ export default function RegisterScreen() {
               ) : null}
 
               <Pressable
-                style={[styles.registerButton, loading && styles.disabledButton]}
+                style={[styles.registerButton, submitting && styles.disabledButton]}
                 onPress={handleRegister}
-                disabled={loading}
+                disabled={submitting}
               >
-                {loading ? (
+                {submitting ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <>
-                    <Text style={styles.registerButtonText}>Create {roleName} Account</Text>
+                    <Text style={styles.registerButtonText}>
+                      Create {roleName} Account
+                    </Text>
                     <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
                   </>
                 )}
@@ -260,7 +272,7 @@ export default function RegisterScreen() {
 
               <View style={styles.loginContainer}>
                 <Text style={styles.loginText}>Already have an account?</Text>
-                <Pressable onPress={handleBackToLogin} disabled={loading}>
+                <Pressable onPress={handleBackToLogin} disabled={submitting}>
                   <Text style={styles.loginLink}>Login</Text>
                 </Pressable>
               </View>
@@ -268,222 +280,74 @@ export default function RegisterScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      <Modal visible={showRoleModal} transparent animationType="slide">
-        <Pressable style={styles.modalOverlay} onPress={() => setShowRoleModal(false)}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Account Type</Text>
-            {(['parent', 'teacher', 'admin'] as UserRole[]).map((r) => (
-              <Pressable
-                key={r}
-                style={[styles.modalOption, role === r && styles.modalOptionActive]}
-                onPress={() => {
-                  setRole(r);
-                  setShowRoleModal(false);
-                }}
-              >
-                <Text style={[styles.modalOptionText, role === r && styles.modalOptionTextActive]}>
-                  {r.charAt(0).toUpperCase() + r.slice(1)}
-                </Text>
-                {role === r && <Ionicons name="checkmark-circle" size={22} color="#1A237E" />}
-              </Pressable>
-            ))}
-          </View>
-        </Pressable>
-      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F5F7FB',
-  },
-  keyboardContainer: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingBottom: 30,
-  },
+  safeArea: { flex: 1, backgroundColor: '#F5F7FB' },
+  keyboardContainer: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
+  container: { flex: 1, paddingHorizontal: 24, paddingBottom: 30 },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 12,
     marginBottom: 20,
   },
-  backText: {
-    marginLeft: 8,
-    fontSize: 15,
-    color: '#061B5E',
-    fontWeight: '600',
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 25,
-  },
+  backText: { marginLeft: 8, fontSize: 15, color: '#061B5E', fontWeight: '600' },
+  header: { alignItems: 'center', marginBottom: 20 },
   iconContainer: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 68, height: 68, borderRadius: 34,
     backgroundColor: '#061B5E',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 15,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 15,
   },
-  title: {
-    fontSize: 25,
-    fontWeight: '700',
-    color: '#061B5E',
-    textAlign: 'center',
-  },
+  title: { fontSize: 25, fontWeight: '700', color: '#061B5E', textAlign: 'center' },
   subtitle: {
-    fontSize: 14,
-    color: '#777777',
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 21,
-    maxWidth: 340,
+    fontSize: 14, color: '#777', textAlign: 'center',
+    marginTop: 8, lineHeight: 21, maxWidth: 340,
   },
-  form: {
-    width: '100%',
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333333',
-    marginBottom: 7,
-    marginTop: 12,
-  },
+  form: { width: '100%' },
+  label: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 7, marginTop: 12 },
   inputContainer: {
-    height: 52,
-    borderWidth: 1,
-    borderColor: '#D9DDE7',
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
+    height: 52, borderWidth: 1, borderColor: '#D9DDE7',
+    borderRadius: 12, backgroundColor: '#FFFFFF',
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14,
   },
-  input: {
-    flex: 1,
-    height: '100%',
-    marginLeft: 10,
-    fontSize: 15,
-    color: '#222222',
+  input: { flex: 1, height: '100%', marginLeft: 10, fontSize: 15, color: '#222' },
+  rolePicker: { flexDirection: 'row', gap: 10, marginBottom: 8 },
+  roleOption: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 6, paddingVertical: 12, borderRadius: 12,
+    backgroundColor: '#EAF0FF', borderWidth: 2, borderColor: 'transparent',
   },
-  selectContainer: {
-    height: 52,
-    borderWidth: 1,
-    borderColor: '#D9DDE7',
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    justifyContent: 'space-between',
+  roleOptionActive: { backgroundColor: '#061B5E', borderColor: '#061B5E' },
+  roleOptionText: { fontSize: 13, fontWeight: '700', color: '#061B5E' },
+  roleOptionTextActive: { color: '#FFFFFF' },
+  roleBox: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#EAF0FF', borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 11, marginTop: 17,
   },
-  selectText: {
-    flex: 1,
-    marginLeft: 10,
-    fontSize: 15,
-    color: '#222222',
-  },
+  roleText: { flex: 1, marginLeft: 8, color: '#405070', fontSize: 13 },
+  roleBold: { color: '#061B5E', fontWeight: '700' },
   errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF1F1',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginTop: 15,
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#FFF1F1', borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 10, marginTop: 15,
   },
-  errorText: {
-    flex: 1,
-    marginLeft: 8,
-    color: '#D32F2F',
-    fontSize: 13,
-    lineHeight: 19,
-  },
+  errorText: { flex: 1, marginLeft: 8, color: '#D32F2F', fontSize: 13 },
   registerButton: {
-    height: 54,
-    backgroundColor: '#061B5E',
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    marginTop: 20,
-    gap: 8,
+    height: 54, backgroundColor: '#061B5E', borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+    flexDirection: 'row', marginTop: 20, gap: 8,
   },
-  disabledButton: {
-    opacity: 0.7,
-  },
-  registerButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  disabledButton: { opacity: 0.7 },
+  registerButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
   loginContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 22,
-    gap: 5,
+    flexDirection: 'row', justifyContent: 'center',
+    marginTop: 22, gap: 5,
   },
-  loginText: {
-    color: '#777777',
-    fontSize: 14,
-  },
-  loginLink: {
-    color: '#061B5E',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1A237E',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  modalOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-    backgroundColor: '#F5F7FB',
-  },
-  modalOptionActive: {
-    backgroundColor: '#E8EAF6',
-    borderWidth: 1,
-    borderColor: '#1A237E',
-  },
-  modalOptionText: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
-  },
-  modalOptionTextActive: {
-    color: '#1A237E',
-    fontWeight: '700',
-  },
+  loginText: { color: '#777', fontSize: 14 },
+  loginLink: { color: '#061B5E', fontSize: 14, fontWeight: '700' },
 });
