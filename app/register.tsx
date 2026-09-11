@@ -2,9 +2,11 @@
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -20,38 +22,28 @@ type UserRole = 'admin' | 'teacher' | 'parent';
 export default function RegisterScreen() {
   const params = useLocalSearchParams<{ role?: string }>();
 
-  // Role can be changed by the user (temporary — for testing)
   const initialRole: UserRole =
     params.role === 'teacher'
       ? 'teacher'
-      : params.role === 'parent'
-      ? 'parent'
       : params.role === 'admin'
       ? 'admin'
-      : 'teacher'; // Default to teacher
+      : params.role === 'parent'
+      ? 'parent'
+      : 'teacher';
 
   const [role, setRole] = useState<UserRole>(initialRole);
-
-  const roleName =
-    role === 'admin'
-      ? 'Administrator'
-      : role === 'teacher'
-      ? 'Teacher'
-      : 'Parent';
-
-  // Form
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Role options (with all 3)
+  const roleName =
+    role === 'admin' ? 'Administrator' : role === 'teacher' ? 'Teacher' : 'Parent';
+
   const roleOptions: { value: UserRole; label: string; icon: any }[] = [
     { value: 'teacher', label: 'Teacher', icon: 'school-outline' },
     { value: 'admin', label: 'Admin', icon: 'shield-checkmark-outline' },
@@ -80,7 +72,6 @@ export default function RegisterScreen() {
         router.replace('/login' as any);
       }
     } catch (err: any) {
-      console.log('Registration error:', err);
       if (err?.code === 'auth/email-already-in-use') {
         setError('An account with this email already exists.');
       } else if (err?.code === 'auth/invalid-email') {
@@ -105,7 +96,7 @@ export default function RegisterScreen() {
   };
 
   return (
-    <View style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -116,7 +107,6 @@ export default function RegisterScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.container}>
-            {/* BACK BUTTON */}
             <Pressable
               style={styles.backButton}
               onPress={handleBackToLogin}
@@ -126,7 +116,6 @@ export default function RegisterScreen() {
               <Text style={styles.backText}>Back to Login</Text>
             </Pressable>
 
-            {/* HEADER */}
             <View style={styles.header}>
               <View style={styles.iconContainer}>
                 <Ionicons
@@ -143,12 +132,10 @@ export default function RegisterScreen() {
               </View>
               <Text style={styles.title}>Create {roleName} Account</Text>
               <Text style={styles.subtitle}>
-                Create your {roleName.toLowerCase()} account to continue to
-                TrustEdConnect.
+                Create your {roleName.toLowerCase()} account to continue to TrustEdConnect.
               </Text>
             </View>
 
-            {/* ✅ ROLE SELECTOR — pick teacher / admin / parent */}
             <Text style={styles.label}>I am a</Text>
             <View style={styles.rolePicker}>
               {roleOptions.map(opt => (
@@ -178,7 +165,6 @@ export default function RegisterScreen() {
               ))}
             </View>
 
-            {/* FORM */}
             <View style={styles.form}>
               <Text style={styles.label}>Full Name</Text>
               <View style={styles.inputContainer}>
@@ -244,9 +230,7 @@ export default function RegisterScreen() {
                   autoCapitalize="none"
                   editable={!submitting}
                 />
-                <Pressable
-                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                >
+                <Pressable onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
                   <Ionicons
                     name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
                     size={21}
@@ -255,32 +239,20 @@ export default function RegisterScreen() {
                 </Pressable>
               </View>
 
-              {/* ROLE INFO */}
               <View style={styles.roleBox}>
-                <Ionicons
-                  name="information-circle-outline"
-                  size={20}
-                  color="#061B5E"
-                />
+                <Ionicons name="information-circle-outline" size={20} color="#061B5E" />
                 <Text style={styles.roleText}>
-                  You are creating a{' '}
-                  <Text style={styles.roleBold}>{roleName}</Text> account.
+                  You are creating a <Text style={styles.roleBold}>{roleName}</Text> account.
                 </Text>
               </View>
 
-              {/* ERROR */}
               {error ? (
                 <View style={styles.errorContainer}>
-                  <Ionicons
-                    name="alert-circle-outline"
-                    size={20}
-                    color="#D32F2F"
-                  />
+                  <Ionicons name="alert-circle-outline" size={20} color="#D32F2F" />
                   <Text style={styles.errorText}>{error}</Text>
                 </View>
               ) : null}
 
-              {/* SUBMIT */}
               <Pressable
                 style={[styles.registerButton, submitting && styles.disabledButton]}
                 onPress={handleRegister}
@@ -308,7 +280,7 @@ export default function RegisterScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -316,158 +288,66 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#F5F7FB' },
   keyboardContainer: { flex: 1 },
   scrollContent: { flexGrow: 1 },
-  container: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingBottom: 30,
-    backgroundColor: '#F5F7FB',
-  },
+  container: { flex: 1, paddingHorizontal: 24, paddingBottom: 30 },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 12,
     marginBottom: 20,
   },
-  backText: {
-    marginLeft: 8,
-    fontSize: 15,
-    color: '#061B5E',
-    fontWeight: '600',
-  },
+  backText: { marginLeft: 8, fontSize: 15, color: '#061B5E', fontWeight: '600' },
   header: { alignItems: 'center', marginBottom: 20 },
   iconContainer: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 68, height: 68, borderRadius: 34,
     backgroundColor: '#061B5E',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 15,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 15,
   },
-  title: {
-    fontSize: 25,
-    fontWeight: '700',
-    color: '#061B5E',
-    textAlign: 'center',
-  },
+  title: { fontSize: 25, fontWeight: '700', color: '#061B5E', textAlign: 'center' },
   subtitle: {
-    fontSize: 14,
-    color: '#777',
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 21,
-    maxWidth: 340,
+    fontSize: 14, color: '#777', textAlign: 'center',
+    marginTop: 8, lineHeight: 21, maxWidth: 340,
   },
   form: { width: '100%' },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 7,
-    marginTop: 12,
-  },
+  label: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 7, marginTop: 12 },
   inputContainer: {
-    height: 52,
-    borderWidth: 1,
-    borderColor: '#D9DDE7',
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
+    height: 52, borderWidth: 1, borderColor: '#D9DDE7',
+    borderRadius: 12, backgroundColor: '#FFFFFF',
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14,
   },
-  input: {
-    flex: 1,
-    height: '100%',
-    marginLeft: 10,
-    fontSize: 15,
-    color: '#222',
-  },
-  rolePicker: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 8,
-  },
+  input: { flex: 1, height: '100%', marginLeft: 10, fontSize: 15, color: '#222' },
+  rolePicker: { flexDirection: 'row', gap: 10, marginBottom: 8 },
   roleOption: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: '#EAF0FF',
-    borderWidth: 2,
-    borderColor: 'transparent',
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 6, paddingVertical: 12, borderRadius: 12,
+    backgroundColor: '#EAF0FF', borderWidth: 2, borderColor: 'transparent',
   },
-  roleOptionActive: {
-    backgroundColor: '#061B5E',
-    borderColor: '#061B5E',
-  },
-  roleOptionText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#061B5E',
-  },
+  roleOptionActive: { backgroundColor: '#061B5E', borderColor: '#061B5E' },
+  roleOptionText: { fontSize: 13, fontWeight: '700', color: '#061B5E' },
   roleOptionTextActive: { color: '#FFFFFF' },
   roleBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#EAF0FF',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    marginTop: 17,
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#EAF0FF', borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 11, marginTop: 17,
   },
-  roleText: {
-    flex: 1,
-    marginLeft: 8,
-    color: '#405070',
-    fontSize: 13,
-  },
+  roleText: { flex: 1, marginLeft: 8, color: '#405070', fontSize: 13 },
   roleBold: { color: '#061B5E', fontWeight: '700' },
   errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF1F1',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginTop: 15,
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#FFF1F1', borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 10, marginTop: 15,
   },
-  errorText: {
-    flex: 1,
-    marginLeft: 8,
-    color: '#D32F2F',
-    fontSize: 13,
-  },
+  errorText: { flex: 1, marginLeft: 8, color: '#D32F2F', fontSize: 13 },
   registerButton: {
-    height: 54,
-    backgroundColor: '#061B5E',
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    marginTop: 20,
+    height: 54, backgroundColor: '#061B5E', borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+    flexDirection: 'row', marginTop: 20, gap: 8,
   },
   disabledButton: { opacity: 0.7 },
-  registerButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-    marginRight: 8,
-  },
+  registerButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
   loginContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 22,
+    flexDirection: 'row', justifyContent: 'center',
+    marginTop: 22, gap: 5,
   },
   loginText: { color: '#777', fontSize: 14 },
-  loginLink: {
-    color: '#061B5E',
-    fontSize: 14,
-    fontWeight: '700',
-    marginLeft: 5,
-  },
+  loginLink: { color: '#061B5E', fontSize: 14, fontWeight: '700' },
 });
