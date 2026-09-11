@@ -38,7 +38,7 @@ export default function LoginScreen() {
     if (role === 'admin') {
       router.replace('/admin' as any);
     } else if (role === 'parent') {
-      router.replace('/parent-dashboard' as any);
+      router.replace('/parent' as any);
     } else {
       router.replace('/(tabs)' as any);
     }
@@ -83,10 +83,8 @@ export default function LoginScreen() {
 
     try {
       setLoading(true);
-      
       const { role } = await loginUser(email, password);
       redirectBasedOnRole(role);
-      
     } catch (err: any) {
       console.log('Login error:', err);
 
