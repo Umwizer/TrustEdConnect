@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-
 import {
   ActivityIndicator,
   Alert,
@@ -25,24 +24,42 @@ import { router } from 'expo-router';
 import AdminHeader from '../../../../components/admin/AdminHeader';
 import { db } from '../../../../services/firebase';
 
-type EventStatus =
-  | 'upcoming'
-  | 'completed'
-  | 'cancelled';
+type TeacherStatus =
+  | 'active'
+  | 'inactive';
 
-export default function NewEventScreen() {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] =
+export default function AddTeacherScreen() {
+  /* =====================================================
+     FORM STATE
+     ===================================================== */
+
+  const [fullName, setFullName] =
     useState('');
 
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
-  const [location, setLocation] =
+  const [teacherId, setTeacherId] =
     useState('');
 
-  const [type, setType] = useState('');
+  const [email, setEmail] =
+    useState('');
+
+  const [phone, setPhone] =
+    useState('');
+
+  const [gender, setGender] =
+    useState('');
+
+  const [department, setDepartment] =
+    useState('');
+
+  const [subject, setSubject] =
+    useState('');
+
   const [status, setStatus] =
-    useState<EventStatus>('upcoming');
+    useState<TeacherStatus>('active');
+
+  /* =====================================================
+     UI STATE
+     ===================================================== */
 
   const [saving, setSaving] =
     useState(false);
@@ -50,31 +67,41 @@ export default function NewEventScreen() {
   const [error, setError] =
     useState('');
 
-  // ============================
-  // SAVE EVENT
-  // ============================
+  /* =====================================================
+     SAVE TEACHER
+     ===================================================== */
 
-  const saveEvent = async () => {
+  const saveTeacher = async () => {
     setError('');
 
-    // Required fields
-    if (!title.trim()) {
+    /* -------------------------
+       Required fields
+       ------------------------- */
+
+    if (!fullName.trim()) {
       setError(
-        'Please enter the event title.'
+        'Please enter the teacher full name.'
       );
       return;
     }
 
-    if (!date.trim()) {
+    if (!teacherId.trim()) {
       setError(
-        'Please enter the event date.'
+        'Please enter the teacher ID.'
       );
       return;
     }
 
-    if (!type.trim()) {
+    if (!email.trim()) {
       setError(
-        'Please enter the event type.'
+        'Please enter the teacher email.'
+      );
+      return;
+    }
+
+    if (!subject.trim()) {
+      setError(
+        'Please enter the teacher subject.'
       );
       return;
     }
@@ -82,42 +109,62 @@ export default function NewEventScreen() {
     try {
       setSaving(true);
 
-      await addDoc(
-        collection(db, 'events'),
-        {
-          title: title.trim(),
+      /* -------------------------
+         Prepare teacher data
+         ------------------------- */
 
-          description:
-            description.trim(),
+      const teacherData = {
+        fullName: fullName.trim(),
 
-          date: date.trim(),
+        teacherId: teacherId.trim(),
 
-          time: time.trim(),
+        email: email.trim().toLowerCase(),
 
-          location:
-            location.trim(),
+        phone: phone.trim(),
 
-          type: type.trim(),
+        gender: gender.trim(),
 
-          status,
+        department: department.trim(),
 
-          createdAt:
-            serverTimestamp(),
+        subject: subject.trim(),
 
-          updatedAt:
-            serverTimestamp(),
-        }
+        status,
+
+        createdAt:
+          serverTimestamp(),
+
+        updatedAt:
+          serverTimestamp(),
+      };
+
+      /* -------------------------
+         Save to Firestore
+         ------------------------- */
+
+      const teacherRef =
+        await addDoc(
+          collection(db, 'teachers'),
+          teacherData
+        );
+
+      console.log(
+        'Teacher created:',
+        teacherRef.id
       );
 
+      /* -------------------------
+         Success
+         ------------------------- */
+
       Alert.alert(
-        'Event created',
-        'The event has been saved successfully.',
+        'Teacher Added',
+        `${fullName.trim()} has been added successfully.`,
         [
           {
             text: 'OK',
             onPress: () => {
               router.replace(
-                '/admin/events' as any
+                '/admin/teachers' as any
               );
             },
           },
@@ -125,22 +172,26 @@ export default function NewEventScreen() {
       );
     } catch (saveError) {
       console.error(
-        'Error creating event:',
+        'Error adding teacher:',
         saveError
       );
 
       setError(
-        'Could not save the event. Please check your internet connection and try again.'
+        'Could not save the teacher. Please check your internet connection and try again.'
       );
     } finally {
       setSaving(false);
     }
   };
 
+  /* =====================================================
+     UI
+     ===================================================== */
+
   return (
     <View style={styles.container}>
 
-      <AdminHeader title="New Event" />
+      <AdminHeader title="Add Teacher" />
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
@@ -159,7 +210,9 @@ export default function NewEventScreen() {
           keyboardShouldPersistTaps="handled"
         >
 
-          {/* Page title */}
+          {/* =================================================
+             PAGE TITLE
+             ================================================= */}
 
           <View style={styles.titleSection}>
 
@@ -168,6 +221,7 @@ export default function NewEventScreen() {
               onPress={() =>
                 router.back()
               }
+              disabled={saving}
             >
               <Ionicons
                 name="arrow-back"
@@ -176,24 +230,39 @@ export default function NewEventScreen() {
               />
             </Pressable>
 
-            <View style={styles.titleTextContainer}>
+            <View
+              style={
+                styles.titleTextContainer
+              }
+            >
 
-              <Text style={styles.pageTitle}>
-                Create New Event
+              <Text
+                style={styles.pageTitle}
+              >
+                Add New Teacher
               </Text>
 
-              <Text style={styles.pageSubtitle}>
-                Add a new event to the school calendar.
+              <Text
+                style={styles.pageSubtitle}
+              >
+                Add a teacher to the school
+                database.
               </Text>
 
             </View>
 
           </View>
 
-          {/* Error */}
+          {/* =================================================
+             ERROR
+             ================================================= */}
 
           {error ? (
-            <View style={styles.errorContainer}>
+            <View
+              style={
+                styles.errorContainer
+              }
+            >
 
               <Ionicons
                 name="alert-circle-outline"
@@ -201,145 +270,238 @@ export default function NewEventScreen() {
                 color="#C62828"
               />
 
-              <Text style={styles.errorText}>
+              <Text
+                style={styles.errorText}
+              >
                 {error}
               </Text>
 
             </View>
           ) : null}
 
-          {/* Form */}
+          {/* =================================================
+             FORM
+             ================================================= */}
 
           <View style={styles.formCard}>
 
-            {/* Title */}
+            {/* -----------------------------------------------
+               FULL NAME
+               ----------------------------------------------- */}
 
             <View style={styles.field}>
 
               <Text style={styles.label}>
-                Event Title
-                <Text style={styles.required}>
+                Full Name
+                <Text
+                  style={styles.required}
+                >
                   {' '}*
                 </Text>
               </Text>
 
               <TextInput
-                value={title}
-                onChangeText={setTitle}
-                placeholder="Enter event title"
+                value={fullName}
+                onChangeText={setFullName}
+                placeholder="e.g. John Doe"
                 placeholderTextColor="#9AA3B2"
                 style={styles.input}
+                editable={!saving}
+                autoCapitalize="words"
               />
 
             </View>
 
-            {/* Type */}
+            {/* -----------------------------------------------
+               TEACHER ID
+               ----------------------------------------------- */}
 
             <View style={styles.field}>
 
               <Text style={styles.label}>
-                Event Type
-                <Text style={styles.required}>
+                Teacher ID
+                <Text
+                  style={styles.required}
+                >
                   {' '}*
                 </Text>
               </Text>
 
               <TextInput
-                value={type}
-                onChangeText={setType}
-                placeholder="e.g. Meeting, Sports, Academic"
+                value={teacherId}
+                onChangeText={setTeacherId}
+                placeholder="e.g. TCH-001"
                 placeholderTextColor="#9AA3B2"
                 style={styles.input}
+                editable={!saving}
+                autoCapitalize="characters"
               />
 
             </View>
 
-            {/* Description */}
+            {/* -----------------------------------------------
+               EMAIL
+               ----------------------------------------------- */}
 
             <View style={styles.field}>
 
               <Text style={styles.label}>
-                Description
-              </Text>
-
-              <TextInput
-                value={description}
-                onChangeText={
-                  setDescription
-                }
-                placeholder="Describe the event..."
-                placeholderTextColor="#9AA3B2"
-                style={[
-                  styles.input,
-                  styles.textArea,
-                ]}
-                multiline
-                numberOfLines={5}
-                textAlignVertical="top"
-              />
-
-            </View>
-
-            {/* Date */}
-
-            <View style={styles.field}>
-
-              <Text style={styles.label}>
-                Date
-                <Text style={styles.required}>
+                Email
+                <Text
+                  style={styles.required}
+                >
                   {' '}*
                 </Text>
               </Text>
 
               <TextInput
-                value={date}
-                onChangeText={setDate}
-                placeholder="e.g. 20 September 2026"
+                value={email}
+                onChangeText={setEmail}
+                placeholder="e.g. teacher@school.com"
                 placeholderTextColor="#9AA3B2"
                 style={styles.input}
+                editable={!saving}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
               />
 
             </View>
 
-            {/* Time */}
+            {/* -----------------------------------------------
+               PHONE
+               ----------------------------------------------- */}
 
             <View style={styles.field}>
 
               <Text style={styles.label}>
-                Time
+                Phone Number
               </Text>
 
               <TextInput
-                value={time}
-                onChangeText={setTime}
-                placeholder="e.g. 10:00 AM"
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="e.g. +250 788 123 456"
                 placeholderTextColor="#9AA3B2"
                 style={styles.input}
+                editable={!saving}
+                keyboardType="phone-pad"
               />
 
             </View>
 
-            {/* Location */}
+            {/* -----------------------------------------------
+               GENDER
+               ----------------------------------------------- */}
 
             <View style={styles.field}>
 
               <Text style={styles.label}>
-                Location
+                Gender
+              </Text>
+
+              <View
+                style={styles.optionRow}
+              >
+
+                <Pressable
+                  style={[
+                    styles.optionButton,
+                    gender === 'Male' &&
+                      styles.selectedOption,
+                  ]}
+                  onPress={() =>
+                    setGender('Male')
+                  }
+                  disabled={saving}
+                >
+                  <Text
+                    style={[
+                      styles.optionText,
+                      gender === 'Male' &&
+                        styles.selectedOptionText,
+                    ]}
+                  >
+                    Male
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    styles.optionButton,
+                    gender === 'Female' &&
+                      styles.selectedOption,
+                  ]}
+                  onPress={() =>
+                    setGender('Female')
+                  }
+                  disabled={saving}
+                >
+                  <Text
+                    style={[
+                      styles.optionText,
+                      gender === 'Female' &&
+                        styles.selectedOptionText,
+                    ]}
+                  >
+                    Female
+                  </Text>
+                </Pressable>
+
+              </View>
+
+            </View>
+
+            {/* -----------------------------------------------
+               DEPARTMENT
+               ----------------------------------------------- */}
+
+            <View style={styles.field}>
+
+              <Text style={styles.label}>
+                Department
               </Text>
 
               <TextInput
-                value={location}
-                onChangeText={
-                  setLocation
-                }
-                placeholder="e.g. School Hall"
+                value={department}
+                onChangeText={setDepartment}
+                placeholder="e.g. Science Department"
                 placeholderTextColor="#9AA3B2"
                 style={styles.input}
+                editable={!saving}
               />
 
             </View>
 
-            {/* Status */}
+            {/* -----------------------------------------------
+               SUBJECT
+               ----------------------------------------------- */}
+
+            <View style={styles.field}>
+
+              <Text style={styles.label}>
+                Subject
+                <Text
+                  style={styles.required}
+                >
+                  {' '}*
+                </Text>
+              </Text>
+
+              <TextInput
+                value={subject}
+                onChangeText={setSubject}
+                placeholder="e.g. Mathematics"
+                placeholderTextColor="#9AA3B2"
+                style={styles.input}
+                editable={!saving}
+              />
+
+            </View>
+
+            {/* -----------------------------------------------
+               STATUS
+               ----------------------------------------------- */}
 
             <View style={styles.field}>
 
@@ -347,71 +509,51 @@ export default function NewEventScreen() {
                 Status
               </Text>
 
-              <View style={styles.statusOptions}>
+              <View
+                style={styles.statusOptions}
+              >
 
                 <Pressable
                   style={[
                     styles.statusOption,
-                    status === 'upcoming' &&
+                    status === 'active' &&
                       styles.selectedStatus,
                   ]}
                   onPress={() =>
-                    setStatus('upcoming')
+                    setStatus('active')
                   }
+                  disabled={saving}
                 >
                   <Text
                     style={[
                       styles.statusOptionText,
-                      status ===
-                        'upcoming' &&
+                      status === 'active' &&
                         styles.selectedStatusText,
                     ]}
                   >
-                    Upcoming
+                    Active
                   </Text>
                 </Pressable>
 
                 <Pressable
                   style={[
                     styles.statusOption,
-                    status === 'completed' &&
+                    status === 'inactive' &&
                       styles.selectedStatus,
                   ]}
                   onPress={() =>
-                    setStatus('completed')
+                    setStatus('inactive')
                   }
+                  disabled={saving}
                 >
                   <Text
                     style={[
                       styles.statusOptionText,
-                      status ===
-                        'completed' &&
+                      status === 'inactive' &&
                         styles.selectedStatusText,
                     ]}
                   >
-                    Completed
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  style={[
-                    styles.statusOption,
-                    status === 'cancelled' &&
-                      styles.selectedStatus,
-                  ]}
-                  onPress={() =>
-                    setStatus('cancelled')
-                  }
-                >
-                  <Text
-                    style={[
-                      styles.statusOptionText,
-                      status ===
-                        'cancelled' &&
-                        styles.selectedStatusText,
-                    ]}
-                  >
-                    Cancelled
+                    Inactive
                   </Text>
                 </Pressable>
 
@@ -421,29 +563,45 @@ export default function NewEventScreen() {
 
           </View>
 
-          {/* Buttons */}
+          {/* =================================================
+             BUTTONS
+             ================================================= */}
 
-          <View style={styles.buttonContainer}>
+          <View
+            style={styles.buttonContainer}
+          >
+
+            {/* Cancel */}
 
             <Pressable
-              style={styles.cancelButton}
+              style={[
+                styles.cancelButton,
+                saving &&
+                  styles.disabledButton,
+              ]}
               onPress={() =>
                 router.back()
               }
               disabled={saving}
             >
-              <Text style={styles.cancelButtonText}>
+              <Text
+                style={
+                  styles.cancelButtonText
+                }
+              >
                 Cancel
               </Text>
             </Pressable>
+
+            {/* Save */}
 
             <Pressable
               style={[
                 styles.saveButton,
                 saving &&
-                  styles.disabledButton,
+                  styles.disabledSaveButton,
               ]}
-              onPress={saveEvent}
+              onPress={saveTeacher}
               disabled={saving}
             >
 
@@ -454,16 +612,18 @@ export default function NewEventScreen() {
                 />
               ) : (
                 <Ionicons
-                  name="checkmark"
+                  name="person-add-outline"
                   size={20}
                   color="#FFFFFF"
                 />
               )}
 
-              <Text style={styles.saveButtonText}>
+              <Text
+                style={styles.saveButtonText}
+              >
                 {saving
                   ? 'Saving...'
-                  : 'Create Event'}
+                  : 'Add Teacher'}
               </Text>
 
             </Pressable>
@@ -473,11 +633,17 @@ export default function NewEventScreen() {
         </ScrollView>
 
       </KeyboardAvoidingView>
+
     </View>
   );
 }
 
+/* =====================================================
+   STYLES
+   ===================================================== */
+
 const styles = StyleSheet.create({
+
   container: {
     flex: 1,
     backgroundColor: '#F5F7FB',
@@ -489,8 +655,12 @@ const styles = StyleSheet.create({
 
   content: {
     padding: 24,
-    paddingBottom: 40,
+    paddingBottom: 50,
   },
+
+  /* =====================================================
+     TITLE
+     ===================================================== */
 
   titleSection: {
     flexDirection: 'row',
@@ -526,6 +696,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
+  /* =====================================================
+     ERROR
+     ===================================================== */
+
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -544,6 +718,10 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     lineHeight: 19,
   },
+
+  /* =====================================================
+     FORM
+     ===================================================== */
 
   formCard: {
     backgroundColor: '#FFFFFF',
@@ -579,11 +757,42 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
 
-  textArea: {
-    height: 115,
-    paddingTop: 13,
-    paddingBottom: 13,
+  /* =====================================================
+     GENDER
+     ===================================================== */
+
+  optionRow: {
+    flexDirection: 'row',
+    gap: 10,
   },
+
+  optionButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 11,
+    borderRadius: 20,
+    backgroundColor: '#F5F7FB',
+    borderWidth: 1,
+    borderColor: '#DCE1EA',
+  },
+
+  selectedOption: {
+    backgroundColor: '#061B5E',
+    borderColor: '#061B5E',
+  },
+
+  optionText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#667085',
+  },
+
+  selectedOptionText: {
+    color: '#FFFFFF',
+  },
+
+  /* =====================================================
+     STATUS
+     ===================================================== */
 
   statusOptions: {
     flexDirection: 'row',
@@ -614,6 +823,10 @@ const styles = StyleSheet.create({
   selectedStatusText: {
     color: '#FFFFFF',
   },
+
+  /* =====================================================
+     BUTTONS
+     ===================================================== */
 
   buttonContainer: {
     flexDirection: 'row',
@@ -651,6 +864,10 @@ const styles = StyleSheet.create({
   },
 
   disabledButton: {
+    opacity: 0.6,
+  },
+
+  disabledSaveButton: {
     opacity: 0.65,
   },
 
@@ -659,4 +876,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
+
 });

@@ -13,8 +13,6 @@ import {
 import {
   collection,
   onSnapshot,
-  orderBy,
-  query,
 } from 'firebase/firestore';
 
 import { Ionicons } from '@expo/vector-icons';
@@ -42,25 +40,21 @@ export default function EventsScreen() {
   const [search, setSearch] = useState('');
   const [eventType, setEventType] = useState('All');
 
-  /*
-   * Load events from Firestore
-   */
+  // =========================================================
+  // LOAD EVENTS FROM FIRESTORE
+  // =========================================================
+
   useEffect(() => {
     setLoading(true);
     setError('');
 
     const eventsRef = collection(db, 'events');
 
-    const eventsQuery = query(
-      eventsRef,
-      orderBy('createdAt', 'desc')
-    );
-
     const unsubscribe = onSnapshot(
-      eventsQuery,
+      eventsRef,
       (snapshot) => {
-        const eventData: SchoolEvent[] =
-          snapshot.docs.map((eventDoc) => {
+        const eventData: SchoolEvent[] = snapshot.docs.map(
+          (eventDoc) => {
             const data = eventDoc.data();
 
             return {
@@ -71,10 +65,29 @@ export default function EventsScreen() {
               time: data.time || '',
               location: data.location || '',
               type: data.type || '',
-              status: data.status || 'upcoming',
+              status: data.status || 'scheduled',
               createdAt: data.createdAt || null,
             };
-          });
+          }
+        );
+
+        // -----------------------------------------------------
+        // Sort newest events first.
+        // This is done locally so Firestore does not require
+        // every event document to have createdAt.
+        // -----------------------------------------------------
+
+        eventData.sort((a, b) => {
+          const aTime = a.createdAt?.toMillis
+            ? a.createdAt.toMillis()
+            : 0;
+
+          const bTime = b.createdAt?.toMillis
+            ? b.createdAt.toMillis()
+            : 0;
+
+          return bTime - aTime;
+        });
 
         setEvents(eventData);
         setLoading(false);
@@ -96,12 +109,13 @@ export default function EventsScreen() {
     return () => unsubscribe();
   }, []);
 
-  /*
-   * Event types from actual database records
-   */
+  // =========================================================
+  // EVENT TYPES
+  // =========================================================
+
   const eventTypes = useMemo(() => {
     const values = events
-      .map((event) => event.type)
+      .map((event) => event.type.trim())
       .filter(Boolean);
 
     return [
@@ -110,9 +124,10 @@ export default function EventsScreen() {
     ];
   }, [events]);
 
-  /*
-   * Search and filter
-   */
+  // =========================================================
+  // SEARCH + TYPE FILTER
+  // =========================================================
+
   const filteredEvents = useMemo(() => {
     const cleanSearch =
       search.trim().toLowerCase();
@@ -141,45 +156,86 @@ export default function EventsScreen() {
     });
   }, [events, search, eventType]);
 
-  /*
-   * Statistics
-   */
-  const upcomingEvents = events.filter(
-    (event) =>
-      event.status.toLowerCase() === 'upcoming'
+  // =========================================================
+  // STATUS HELPERS
+  // =========================================================
+
+  const isScheduledEvent = (event: SchoolEvent) => {
+    const status = event.status
+      .trim()
+      .toLowerCase();
+
+    return (
+      status === 'scheduled' ||
+      status === 'upcoming'
+    );
+  };
+
+  const isCompletedEvent = (event: SchoolEvent) => {
+    return (
+      event.status
+        .trim()
+        .toLowerCase() === 'completed'
+    );
+  };
+
+  const isCancelledEvent = (event: SchoolEvent) => {
+    return (
+      event.status
+        .trim()
+        .toLowerCase() === 'cancelled'
+    );
+  };
+
+  // =========================================================
+  // STATISTICS
+  // =========================================================
+
+  const scheduledEvents = events.filter(
+    isScheduledEvent
   ).length;
 
   const completedEvents = events.filter(
-    (event) =>
-      event.status.toLowerCase() === 'completed'
+    isCompletedEvent
   ).length;
 
   const cancelledEvents = events.filter(
-    (event) =>
-      event.status.toLowerCase() === 'cancelled'
+    isCancelledEvent
   ).length;
 
-  /*
-   * Navigate to New Event
-   */
+  // =========================================================
+  // NAVIGATE TO NEW EVENT
+  // =========================================================
+
   const goToNewEvent = () => {
     router.push('/admin/events/new' as any);
   };
 
-  /*
-   * Render event
-   */
+  // =========================================================
+  // RENDER EVENT
+  // =========================================================
+
   const renderEvent = ({
     item,
   }: {
     item: SchoolEvent;
   }) => {
-    const status =
-      item.status.toLowerCase();
+    const status = item.status
+      .trim()
+      .toLowerCase();
+
+    const scheduled =
+      status === 'scheduled' ||
+      status === 'upcoming';
+
+    const completed =
+      status === 'completed';
 
     return (
-      <Pressable style={styles.eventCard}>
-
+      <Pressable
+        style={styles.eventCard}
+      >
+        {/* DATE */}
         <View style={styles.dateBox}>
           <Ionicons
             name="calendar-outline"
@@ -197,6 +253,7 @@ export default function EventsScreen() {
           ) : null}
         </View>
 
+        {/* EVENT INFORMATION */}
         <View style={styles.eventInfo}>
           <Text
             style={styles.eventTitle}
@@ -221,7 +278,7 @@ export default function EventsScreen() {
           ) : null}
 
           <View style={styles.metaRow}>
-
+            {/* TIME */}
             {item.time ? (
               <View style={styles.metaItem}>
                 <Ionicons
@@ -236,6 +293,7 @@ export default function EventsScreen() {
               </View>
             ) : null}
 
+            {/* LOCATION */}
             {item.location ? (
               <View style={styles.metaItem}>
                 <Ionicons
@@ -252,18 +310,18 @@ export default function EventsScreen() {
                 </Text>
               </View>
             ) : null}
-
           </View>
         </View>
 
+        {/* STATUS */}
         <View style={styles.rightSide}>
-
           <View
             style={[
               styles.statusBadge,
-              status === 'upcoming'
+
+              scheduled
                 ? styles.upcomingBadge
-                : status === 'completed'
+                : completed
                 ? styles.completedBadge
                 : styles.cancelledBadge,
             ]}
@@ -271,14 +329,17 @@ export default function EventsScreen() {
             <Text
               style={[
                 styles.statusText,
-                status === 'upcoming'
+
+                scheduled
                   ? styles.upcomingText
-                  : status === 'completed'
+                  : completed
                   ? styles.completedText
                   : styles.cancelledText,
               ]}
             >
-              {item.status || 'Unknown'}
+              {status === 'upcoming'
+                ? 'Scheduled'
+                : item.status || 'Unknown'}
             </Text>
           </View>
 
@@ -287,25 +348,26 @@ export default function EventsScreen() {
             size={20}
             color="#9AA3B2"
           />
-
         </View>
-
       </Pressable>
     );
   };
 
+  // =========================================================
+  // SCREEN
+  // =========================================================
+
   return (
     <View style={styles.container}>
-
       <AdminHeader title="Events" />
 
       <View style={styles.content}>
+        {/* ===================================================
+            PAGE HEADER
+        =================================================== */}
 
-        {/* Page heading */}
         <View style={styles.topSection}>
-
           <View style={styles.headingContainer}>
-
             <Text style={styles.pageTitle}>
               Events
             </Text>
@@ -313,7 +375,6 @@ export default function EventsScreen() {
             <Text style={styles.pageSubtitle}>
               Manage school events and activities.
             </Text>
-
           </View>
 
           <Pressable
@@ -330,12 +391,14 @@ export default function EventsScreen() {
               New Event
             </Text>
           </Pressable>
-
         </View>
 
-        {/* Statistics */}
-        <View style={styles.statsContainer}>
+        {/* ===================================================
+            STATISTICS
+        =================================================== */}
 
+        <View style={styles.statsContainer}>
+          {/* TOTAL */}
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>
               {events.length}
@@ -346,16 +409,18 @@ export default function EventsScreen() {
             </Text>
           </View>
 
+          {/* SCHEDULED */}
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>
-              {upcomingEvents}
+              {scheduledEvents}
             </Text>
 
             <Text style={styles.statLabel}>
-              Upcoming
+              Scheduled
             </Text>
           </View>
 
+          {/* COMPLETED */}
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>
               {completedEvents}
@@ -366,6 +431,7 @@ export default function EventsScreen() {
             </Text>
           </View>
 
+          {/* CANCELLED */}
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>
               {cancelledEvents}
@@ -375,12 +441,13 @@ export default function EventsScreen() {
               Cancelled
             </Text>
           </View>
-
         </View>
 
-        {/* Search */}
-        <View style={styles.searchContainer}>
+        {/* ===================================================
+            SEARCH
+        =================================================== */}
 
+        <View style={styles.searchContainer}>
           <Ionicons
             name="search-outline"
             size={21}
@@ -406,13 +473,14 @@ export default function EventsScreen() {
               />
             </Pressable>
           )}
-
         </View>
 
-        {/* Event type filters */}
+        {/* ===================================================
+            EVENT TYPE FILTERS
+        =================================================== */}
+
         {eventTypes.length > 1 && (
           <View style={styles.filterWrapper}>
-
             <FlatList
               horizontal
               data={eventTypes}
@@ -449,13 +517,14 @@ export default function EventsScreen() {
                 );
               }}
             />
-
           </View>
         )}
 
-        {/* List header */}
-        <View style={styles.listHeader}>
+        {/* ===================================================
+            LIST HEADER
+        =================================================== */}
 
+        <View style={styles.listHeader}>
           <Text style={styles.listTitle}>
             Event List
           </Text>
@@ -466,13 +535,14 @@ export default function EventsScreen() {
               ? 'event'
               : 'events'}
           </Text>
-
         </View>
 
-        {/* Loading */}
+        {/* ===================================================
+            LOADING
+        =================================================== */}
+
         {loading ? (
           <View style={styles.center}>
-
             <ActivityIndicator
               size="large"
               color="#061B5E"
@@ -481,13 +551,13 @@ export default function EventsScreen() {
             <Text style={styles.loadingText}>
               Loading events...
             </Text>
-
           </View>
-
         ) : error ? (
+          /* =================================================
+             ERROR
+          ================================================= */
 
           <View style={styles.center}>
-
             <Ionicons
               name="alert-circle-outline"
               size={45}
@@ -501,13 +571,13 @@ export default function EventsScreen() {
             <Text style={styles.errorText}>
               {error}
             </Text>
-
           </View>
-
         ) : filteredEvents.length === 0 ? (
+          /* =================================================
+             EMPTY
+          ================================================= */
 
           <View style={styles.center}>
-
             <Ionicons
               name="calendar-outline"
               size={55}
@@ -534,10 +604,11 @@ export default function EventsScreen() {
                 </Text>
               </Pressable>
             )}
-
           </View>
-
         ) : (
+          /* =================================================
+             EVENTS
+          ================================================= */
 
           <FlatList
             data={filteredEvents}
@@ -548,13 +619,15 @@ export default function EventsScreen() {
               styles.eventList
             }
           />
-
         )}
-
       </View>
     </View>
   );
 }
+
+// ===========================================================
+// STYLES
+// ===========================================================
 
 const styles = StyleSheet.create({
   container: {
