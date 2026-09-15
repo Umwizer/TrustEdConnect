@@ -1,98 +1,191 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React from 'react';
+import {
+  SafeAreaView,
+  ScrollView,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+const Colors = {
+  primary: '#1E3A8A',
+  bg: '#F8FAFC',
+  white: '#FFFFFF',
+  textDark: '#0F172A',
+  textGray: '#64748B',
+  border: '#E2E8F0',
+  blue: '#3B82F6',
+  purple: '#8B5CF6',
+  orange: '#F59E0B',
+  pink: '#EC4899',
+  green: '#10B981',
+};
 
-export default function HomeScreen() {
+const QUICK_ACTIONS = [
+  { id: 1, label: 'My Classes', icon: 'school-outline' as const, color: Colors.blue, route: '/(tabs)/classes' },
+  { id: 2, label: 'Students', icon: 'people-outline' as const, color: Colors.purple, route: '/(tabs)/students' },
+  { id: 3, label: 'Attendance', icon: 'calendar-outline' as const, color: Colors.orange, route: '/(tabs)/attendance' },
+  { id: 4, label: 'Results', icon: 'bar-chart-outline' as const, color: Colors.pink, route: '/(tabs)/results' },
+];
+
+export default function HomeTabScreen() {
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar style="dark" />
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.contentContainer}
+      >
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.headerTitle}>Home</Text>
+            <Text style={styles.headerSubtitle}>Welcome back</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.logoutBtn}
+            onPress={() => router.replace('/login')}
+          >
+            <Ionicons name="log-out-outline" size={22} color={Colors.textDark} />
+          </TouchableOpacity>
+        </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+        <View style={styles.heroBanner}>
+          <View style={styles.heroTextContainer}>
+            <Text style={styles.heroTitle}>Welcome to TrustEdConnect</Text>
+            <Text style={styles.heroDesc}>
+              Your teaching tools, all in one place.
+            </Text>
+          </View>
+          <View style={styles.heroIconContainer}>
+            <Ionicons name="school-outline" size={90} color="rgba(255,255,255,0.1)" />
+          </View>
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+        </View>
+
+        <View style={styles.quickActionsGrid}>
+          {QUICK_ACTIONS.map((action) => (
+            <TouchableOpacity
+              key={action.id}
+              style={styles.quickActionCard}
+              onPress={() => router.push(action.route as any)}
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: `${action.color}15` }]}>
+                <Ionicons name={action.icon} size={24} color={action.color} />
+              </View>
+              <Text style={styles.quickActionLabel}>{action.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recent Activity</Text>
+        </View>
+
+        <View style={styles.activityCard}>
+          <View style={[styles.activityIcon, { backgroundColor: '#E0E7FF' }]}>
+            <Ionicons name="checkmark-circle" size={20} color={Colors.blue} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.activityTitle}>Attendance marked</Text>
+            <Text style={styles.activityDesc}>S4 Computer Science • Today</Text>
+          </View>
+        </View>
+
+        <View style={styles.activityCard}>
+          <View style={[styles.activityIcon, { backgroundColor: '#EDE9FE' }]}>
+            <Ionicons name="document-text" size={20} color={Colors.purple} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.activityTitle}>Grades submitted</Text>
+            <Text style={styles.activityDesc}>S5 Mathematics • Yesterday</Text>
+          </View>
+        </View>
+
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  safeArea: { flex: 1, backgroundColor: Colors.bg },
+  container: { flex: 1, backgroundColor: Colors.bg },
+  contentContainer: { paddingBottom: 40 },
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  headerTitle: { fontSize: 24, fontWeight: '800', color: Colors.textDark },
+  headerSubtitle: { fontSize: 13, color: Colors.textGray, marginTop: 2 },
+  logoutBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  heroBanner: {
+    backgroundColor: Colors.primary,
+    marginHorizontal: 20,
+    borderRadius: 20,
+    padding: 24,
+    overflow: 'hidden',
+    marginBottom: 24,
   },
+  heroTextContainer: { zIndex: 2 },
+  heroTitle: { fontSize: 22, fontWeight: '800', color: Colors.white, marginBottom: 8 },
+  heroDesc: { fontSize: 13, color: '#BFDBFE', lineHeight: 20 },
+  heroIconContainer: { position: 'absolute', right: -10, bottom: -20, opacity: 0.8 },
+  sectionHeader: { paddingHorizontal: 20, marginBottom: 16 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: Colors.textDark },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginBottom: 30,
+  },
+  quickActionCard: { alignItems: 'center', gap: 8, flex: 1 },
+  quickActionIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickActionLabel: { fontSize: 12, fontWeight: '600', color: Colors.textDark },
+  activityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    marginHorizontal: 20,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: 14,
+  },
+  activityIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activityTitle: { fontSize: 14, fontWeight: '700', color: Colors.textDark, marginBottom: 2 },
+  activityDesc: { fontSize: 12, color: Colors.textGray },
 });
