@@ -1,4 +1,4 @@
-// app/(tabs)/_layout.tsx - 5 Main Tabs Only
+import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
 export default function TabLayout() {
   const [fontsLoaded] = useFonts({
